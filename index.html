@@ -1,0 +1,1501 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>점대칭 마법사</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e6eff7; --card:#ffffff; --ink:#18223f; --muted:#56607f; --line:#d3deee;
+  --accent:#e5337f; --blue:#2b5cd9; --mint:#0e9f8e; --gold:#f0a400;
+  --good:#12934a; --bad:#d93a4b; --board:#fbfdff; --grid:#cfe0ee; --dot:#9db6d3;
+  --shape:rgba(43,92,217,.18); --image:rgba(14,159,142,.24);
+  --shadow:0 6px 0 rgba(24,34,63,.08), 0 14px 30px rgba(24,34,63,.10);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1426; --card:#1a2140; --ink:#eef2ff; --muted:#a4aed3; --line:#2e3865;
+    --accent:#ff6aa9; --blue:#86a4ff; --mint:#3fd8c5; --gold:#ffc53d;
+    --good:#47d684; --bad:#ff7080; --board:#121833; --grid:#25305c; --dot:#4a5a94;
+    --shape:rgba(134,164,255,.22); --image:rgba(63,216,197,.24);
+    --shadow:0 6px 0 rgba(0,0,0,.25), 0 14px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1426; --card:#1a2140; --ink:#eef2ff; --muted:#a4aed3; --line:#2e3865;
+  --accent:#ff6aa9; --blue:#86a4ff; --mint:#3fd8c5; --gold:#ffc53d;
+  --good:#47d684; --bad:#ff7080; --board:#121833; --grid:#25305c; --dot:#4a5a94;
+  --shape:rgba(134,164,255,.22); --image:rgba(63,216,197,.24);
+  --shadow:0 6px 0 rgba(0,0,0,.25), 0 14px 30px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background-color:var(--bg);color:var(--ink);
+  font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  font-size:17px;line-height:1.55;min-height:100vh;-webkit-text-size-adjust:100%}
+h1,h2,h3,.jua{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-weight:400;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.board:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#app{max-width:860px;margin:0 auto;padding:10px 14px 48px}
+.top{display:flex;align-items:center;gap:8px;padding:4px 0 12px}
+.top h1{font-size:24px;flex:1;letter-spacing:-.02em}
+.ibtn{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:7px 12px;font-size:15px;min-height:42px}
+.ibtn:hover{border-color:var(--blue)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.row.center{justify-content:center}
+.btn{border:2px solid var(--ink);background:var(--card);border-radius:16px;padding:10px 18px;font-size:17px;min-height:46px;box-shadow:0 4px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--ink)}
+.btn.ghost{border-color:var(--line);box-shadow:0 4px 0 var(--line)}
+.btn[disabled]{opacity:.5;cursor:default}
+/* home */
+.hero{padding:6px 2px 14px}
+.hero h2{font-size:clamp(34px,8vw,52px);line-height:1.05;letter-spacing:-.03em}
+.hero p{margin:10px 0 0;max-width:34em;color:var(--muted)}
+.heroboard{margin:0 0 14px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.modes{grid-template-columns:1fr}}
+.mode{text-align:left;background:var(--card);border:2px solid var(--ink);border-radius:22px;padding:18px;box-shadow:0 6px 0 var(--ink);transition:transform .08s,box-shadow .08s;display:block;width:100%}
+.mode:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.mode h3{font-size:24px;margin-bottom:4px}
+.mode p{margin:0 0 10px;color:var(--muted);font-size:15.5px}
+.mode .got{font-size:15px;color:var(--ink)}
+.stars{letter-spacing:2px;color:var(--gold);white-space:nowrap}
+.stars .off{color:var(--line)}
+.modes .wide{grid-column:1/-1}
+.vtx.wrong{fill:var(--bad)}
+/* stages */
+.stagegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:620px){.stagegrid{grid-template-columns:repeat(2,1fr)}}
+.stage{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 8px;text-align:center;box-shadow:0 4px 0 var(--line);display:flex;flex-direction:column;gap:2px;align-items:center}
+.stage:hover{border-color:var(--blue)}
+.stage .num{font-family:'Jua',sans-serif;font-size:30px;line-height:1}
+.stage .tag{font-size:13.5px;color:var(--muted)}
+/* hud */
+.hud{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pill{background:var(--card);border:2px solid var(--line);border-radius:999px;padding:3px 14px;font-size:15px;white-space:nowrap}
+.pdots{flex:1;display:flex;gap:6px;justify-content:center}
+.pdots i{width:12px;height:12px;border-radius:50%;background:var(--line);display:block}
+.pdots i.on{background:var(--blue)}
+.pdots i.cur{background:var(--accent);transform:scale(1.25)}
+/* board */
+.boardwrap{padding:10px}
+.board{width:100%;height:auto;display:block;touch-action:manipulation;user-select:none;-webkit-user-select:none;border-radius:14px}
+.board.clicky{cursor:pointer}
+.board .bg{fill:var(--board);stroke:var(--line);stroke-width:2}
+.board .grid line{stroke:var(--grid);stroke-width:1}
+.board .dots circle{fill:var(--dot)}
+.shape{fill:var(--shape);stroke:var(--blue);stroke-width:3.5;stroke-linejoin:round}
+.shape.open{fill:none}
+.imgshape{fill:var(--image);stroke:var(--mint);stroke-width:3.5;stroke-linejoin:round}
+.trace{fill:none;stroke:var(--mint);stroke-width:3;stroke-dasharray:3 6;stroke-linecap:round}
+.ghost{fill:none;stroke:var(--gold);stroke-width:3.5;stroke-dasharray:8 6;stroke-linejoin:round}
+.vtx{fill:var(--blue);stroke:var(--board);stroke-width:2.5}
+.vtx.src{fill:var(--accent)}
+.vtx.good{fill:var(--good)}
+.vtx.img{fill:var(--mint)}
+.lbl{font-family:'Jua',sans-serif;font-size:21px;text-anchor:middle;dominant-baseline:central;fill:var(--ink);paint-order:stroke;stroke:var(--board);stroke-width:5px;stroke-linejoin:round;pointer-events:none}
+.lbl.o{fill:var(--accent);font-size:23px}
+.center{fill:var(--accent);stroke:var(--board);stroke-width:2.5}
+.pair{stroke:var(--gold);stroke-width:2.5;stroke-dasharray:7 6;fill:none}
+.hintline{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:2 7;stroke-linecap:round}
+.edge-hl{fill:none;stroke-width:8;stroke-linecap:round;opacity:.9}
+.edge-hl.src{stroke:var(--accent)}
+.edge-hl.good{stroke:var(--good)}
+.arc{fill-opacity:.35;stroke-width:2}
+.arc.src{fill:var(--accent);stroke:var(--accent)}
+.arc.good{fill:var(--good);stroke:var(--good)}
+.pv{fill:none;stroke:var(--accent);stroke-width:2.5;pointer-events:none}
+.shake{animation:shake .35s}
+@keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+/* question card */
+.qtext{font-size:19px;line-height:1.5}
+.qtext b{font-family:'Jua',sans-serif;font-weight:400;color:var(--accent);font-size:1.15em}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.choices:empty{display:none}
+.choice{border:2px solid var(--ink);background:var(--card);border-radius:16px;padding:12px 8px;font-size:18px;min-height:52px;box-shadow:0 4px 0 var(--ink)}
+.choice:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.choice.bad{background:var(--bad);color:#fff;opacity:.75}
+.choice.ok{background:var(--good);color:#fff}
+.fb{margin-top:12px;border-radius:14px;padding:10px 14px;font-size:16.5px;display:none}
+.fb.show{display:block}
+.fb.good{background:color-mix(in srgb,var(--good) 16%,var(--card));border:2px solid var(--good)}
+.fb.bad{background:color-mix(in srgb,var(--bad) 14%,var(--card));border:2px solid var(--bad)}
+.fb.info{background:color-mix(in srgb,var(--gold) 18%,var(--card));border:2px solid var(--gold)}
+/* result */
+.result{text-align:center;padding:26px 16px}
+.result .big{font-size:60px;line-height:1.1}
+.result h2{font-size:32px;margin:4px 0}
+.result .stars{font-size:44px}
+.result ul{list-style:none;padding:0;margin:12px auto;max-width:24em;text-align:left}
+.result li{padding:5px 0;border-bottom:1px dashed var(--line)}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,14,30,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(18px + env(safe-area-inset-top,0px)) 14px calc(18px + env(safe-area-inset-bottom,0px));overflow:auto;z-index:50}
+.modal[hidden]{display:none}
+.modal .sheet{background:var(--card);border:2px solid var(--ink);border-radius:24px;max-width:700px;width:100%;padding:18px;box-shadow:var(--shadow)}
+.modal h2{font-size:26px;margin-bottom:6px}
+.modal ul{margin:8px 0 0;padding-left:1.2em}
+.modal li{margin:6px 0}
+.modal b{color:var(--accent)}
+#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+#fx span{position:absolute;top:-40px;animation:fall 2.8s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.9}}
+@media (prefers-reduced-motion:reduce){
+  .shake,#fx span{animation:none}
+  .btn,.mode,.choice{transition:none}
+}
+
+/* ---- 점대칭 드로잉 창 ---- */
+#zStudio{--zbar:#c42a6c;position:fixed;inset:0;z-index:55;background:var(--bg);display:none;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #zStudio{--zbar:#7e2a55}}
+:root[data-theme="dark"] #zStudio{--zbar:#7e2a55}
+#zStudio.open{display:flex}
+#zStudio button{font-family:'Jua','Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+#zTop{display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap;background:var(--zbar);color:#fff}
+#zTop .zttl{font-family:'Jua',sans-serif;font-size:24px;margin-right:10px;white-space:nowrap}
+.zsb{border:2px solid rgba(255,255,255,.7);background:rgba(255,255,255,.16);color:#fff;border-radius:14px;padding:6px 14px;font-size:18px;cursor:pointer;min-height:46px}
+.zsb.zsave{background:#fff;color:var(--zbar);border-color:#fff}
+.zsb.zclose{margin-left:auto}
+.zsb:disabled{opacity:.45;cursor:default}
+#zToast{font-size:17px;min-width:120px}
+#zBody{flex:1;min-height:0;display:flex;gap:10px;padding:10px 12px 12px}
+#zTools{width:206px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;padding:8px;background:var(--card);border:2px solid var(--line);border-radius:18px}
+#zTools h4,#zOpts h4{grid-column:1/-1;margin:8px 2px 0;font-family:'Jua',sans-serif;font-size:16px;font-weight:400;color:var(--muted)}
+.ztl{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:4px 2px;font-size:16.5px;cursor:pointer;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.ztl i{font-style:normal;font-size:22px}
+.ztl.on,.zob.on{background:var(--zbar);border-color:var(--zbar);color:#fff}
+#zStage{flex:1;min-width:0;position:relative;background:var(--card);border:2px solid var(--line);border-radius:18px}
+#zCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;border-radius:16px;cursor:crosshair}
+#zOpts{width:280px;overflow:auto;padding:8px 10px 12px;background:var(--card);border:2px solid var(--line);border-radius:18px;display:flex;flex-direction:column;gap:6px}
+.zhint{font-size:15px;line-height:1.45;color:var(--muted);margin:2px 2px 4px}
+.zgrid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.zgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.zob{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:6px 4px;font-size:16.5px;cursor:pointer;min-height:46px}
+.zob:disabled{opacity:.45;cursor:default}
+.zswr{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.zswc{width:38px;height:38px;border-radius:50%;border:3px solid var(--line);padding:0;cursor:pointer}
+.zswc.on{border-color:var(--ink);box-shadow:0 0 0 3px var(--board)}
+.zrng{display:flex;align-items:center;gap:8px;font-size:16.5px}
+.zrng input{flex:1;height:34px;accent-color:var(--zbar)}
+.zchk{display:flex;align-items:center;gap:10px;font-size:16.5px;min-height:40px;cursor:pointer}
+.zchk input{width:24px;height:24px;accent-color:var(--zbar)}
+#zColorIn{width:48px;height:38px;border:3px solid var(--line);border-radius:10px;padding:0;background:var(--card)}
+@media (max-width:1000px){
+  #zBody{flex-direction:column}
+  #zTools{width:auto;max-height:25vh;grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+  #zOpts{width:auto;max-height:30vh}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button class="ibtn" id="btnBack" hidden aria-label="뒤로">◀ 뒤로</button>
+    <h1>점대칭 마법사</h1>
+    <button class="ibtn" id="btnHelp">📘 개념</button>
+    <button class="ibtn" id="btnSound" aria-label="소리 켜기/끄기">🔊</button>
+  </header>
+  <main id="view"></main>
+</div>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mtitle">
+  <div class="sheet" id="sheet"></div>
+</div>
+<div id="zStudio" role="dialog" aria-modal="true" aria-label="점대칭 드로잉">
+  <div id="zTop">
+    <div class="zttl">🖌️ 점대칭 드로잉</div>
+    <button class="zsb" id="zUndo" type="button">↶ 되돌리기</button>
+    <button class="zsb" id="zRedo" type="button">↷ 다시 하기</button>
+    <button class="zsb" id="zClear" type="button">모두 지우기</button>
+    <button class="zsb" id="zSpin" type="button">🔄 180° 돌려 보기</button>
+    <button class="zsb zsave" id="zSave" type="button">저장 (PNG)</button>
+    <span id="zToast" aria-live="polite"></span>
+    <button class="zsb zclose" id="zClose" type="button">✕ 닫기</button>
+  </div>
+  <div id="zBody">
+    <div id="zTools"></div>
+    <div id="zStage"><canvas id="zCanvas" aria-label="그림을 그리는 곳"></canvas></div>
+    <div id="zOpts"></div>
+  </div>
+</div>
+<div id="fx" aria-hidden="true"></div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s);
+const NS='http://www.w3.org/2000/svg';
+const CELL=40,W=16,H=10,VBW=W*CELL,VBH=H*CELL;
+const KO=['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅈ','ㅊ','ㅋ'];
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/*DATA_START*/
+// 중심(0,0) 기준 상대좌표. 앞쪽 절반의 꼭짓점만 적고, 나머지 절반은 (-x,-y)로 만든다.
+const FIGS={
+  para1:[[-3,-2],[2,-2]],
+  hex1:[[-2,-3],[2,-3],[4,0]],
+  para2:[[-4,-1],[1,-3]],
+  hex2:[[-3,-3],[1,-3],[4,-1]],
+  hexC:[[-3,-1],[-1,-3],[1,-1]],
+  hexD:[[-4,-1],[-2,-3],[0,-1]],
+  sTet:[[-3,-2],[0,-2],[0,-1],[3,-1]],
+  sSlant:[[-4,-3],[-1,-3],[-1,-1],[1,-1]],
+  zig2:[[-4,-3],[-2,-3],[-2,-1],[1,-1]]
+};
+const STAGE_FIG=['para1','hex1','para2','hex2','hexC','hexD','sTet','sSlant','zig2',null];
+const STAGE_Q=[
+  ['pt','pt','side'],
+  ['pt','side','side'],
+  ['pt','side','angle'],
+  ['angle','side','pt'],
+  ['meas','angle','side'],
+  ['center','pt','meas'],
+  ['angle','center','side'],
+  ['meas','center','angle'],
+  ['side','angle','meas','center'],
+  ['center','pt','side','angle','meas']
+];
+// 그리기 단계: o=대칭의 중심, h=점대칭도형의 앞쪽 절반 꼭짓점(차례대로), m=처음에 보여 줄 꼭짓점 수
+const DRAW=[
+  {o:[8,5],h:[[5,3],[10,3]],m:3},
+  {o:[8,5],h:[[5,3],[10,3]],m:2},
+  {o:[8,5],h:[[6,2],[10,2],[12,5]],m:4},
+  {o:[8,5],h:[[5,4],[7,2],[9,4]],m:3},
+  {o:[6,5],h:[[3,2],[7,2],[10,4]],m:3},
+  {o:[8,5],h:[[5,3],[8,3],[8,4],[11,4]],m:4},
+  {o:[8,5],h:[[4,2],[7,2],[7,4],[9,4]],m:4},
+  {o:[8,5],h:[[4,2],[6,2],[6,4],[9,4]],m:4},
+  {o:[7,5],h:[[3,4],[5,2],[7,4]],m:3},
+  {o:[9,4],h:[[5,1],[7,1],[7,3],[10,3]],m:4}
+];
+// 자유 그리기: 안내 없이 나머지 반쪽을 직접 그리는 단계
+const FREE=[
+  {o:[8,5],h:[[4,4],[9,2]],m:2},
+  {o:[7,5],h:[[4,3],[9,3]],m:2},
+  {o:[8,5],h:[[6,2],[10,2],[12,5]],m:3},
+  {o:[10,4],h:[[7,3],[9,1],[11,3]],m:3},
+  {o:[6,5],h:[[3,3],[6,3],[6,4],[9,4]],m:4},
+  {o:[7,4],h:[[3,1],[6,1],[6,3],[8,3]],m:4}
+];
+/*DATA_END*/
+
+const TAGS_A=['점 찾기','점·변','점·변·각','각·변','길이·각도','중심 찾기','각·중심','길이·중심','종합','도전 문제'];
+const TAGS_B=['평행사변형 1','평행사변형 2','육각형','오목 육각형','중심 옮기기','S자 도형','기울어진 S','지그재그','작은 육각형','도전 문제'];
+const TAGS_C=['평행사변형','평행사변형 2','육각형','오목 육각형','S자 도형','기울어진 S'];
+
+/* ---------- storage ---------- */
+const KEY='ptsym_v1';
+let save={A:{},B:{},C:{},sound:true};
+try{const s=localStorage.getItem(KEY);if(s)save=Object.assign(save,JSON.parse(s));}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
+
+/* ---------- sound & fx ---------- */
+let ac=null;
+function beep(f,d,type,vol,delay){
+  if(!save.sound)return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(delay||0);
+    o.type=type||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(vol||.07,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);
+  }catch(e){}
+}
+const sfx={
+  ok(){beep(660,.12);beep(880,.18,'sine',.07,.1)},
+  bad(){beep(200,.25,'sawtooth',.045)},
+  put(){beep(520,.08,'triangle',.06)},
+  win(){[523,659,784,1047].forEach((f,i)=>beep(f,.22,'triangle',.07,i*.12))}
+};
+function confetti(){
+  if(reduced)return;
+  const fx=$('#fx'),em=['⭐','✨','🎉','🔄','💫'];
+  for(let i=0;i<26;i++){
+    const s=document.createElement('span');
+    s.textContent=pick(em);s.style.left=Math.random()*100+'vw';
+    s.style.animationDelay=(Math.random()*.9)+'s';s.style.fontSize=(18+Math.random()*20)+'px';
+    fx.appendChild(s);setTimeout(()=>s.remove(),4200);
+  }
+}
+function shake(){const b=$('#bd');if(!b||reduced)return;b.classList.remove('shake');void b.getBoundingClientRect();b.classList.add('shake');}
+
+/* ---------- geometry helpers ---------- */
+const polyPts=vs=>vs.map(p=>`${p[0]*CELL},${p[1]*CELL}`).join(' ');
+function labelPos(v,o,off){
+  let dx=v[0]-o[0],dy=v[1]-o[1];const d=Math.hypot(dx,dy)||1;
+  return [v[0]*CELL+dx/d*(off||23),v[1]*CELL+dy/d*(off||23)];
+}
+function convexAt(vs,i,area){
+  const n=vs.length,p=vs[(i-1+n)%n],v=vs[i],q=vs[(i+1)%n];
+  const cr=(v[0]-p[0])*(q[1]-v[1])-(v[1]-p[1])*(q[0]-v[0]);
+  return cr*area>0;
+}
+function arcPath(v,p,q,convex){
+  const r=26;
+  const aq=Math.atan2(q[1]-v[1],q[0]-v[0]),ap=Math.atan2(p[1]-v[1],p[0]-v[0]);
+  const d=(ap-aq+2*Math.PI)%(2*Math.PI);
+  const useD=convex?d<Math.PI:d>Math.PI;
+  const interior=useD?d:2*Math.PI-d;
+  const sweep=useD?1:0,large=interior>Math.PI?1:0;
+  const p1=[v[0]+r*Math.cos(aq),v[1]+r*Math.sin(aq)],p2=[v[0]+r*Math.cos(ap),v[1]+r*Math.sin(ap)];
+  return `M ${v[0]} ${v[1]} L ${p1[0]} ${p1[1]} A ${r} ${r} 0 ${large} ${sweep} ${p2[0]} ${p2[1]} Z`;
+}
+function segDist(px,py,a,b){
+  const dx=b[0]-a[0],dy=b[1]-a[1];
+  let t=((px-a[0])*dx+(py-a[1])*dy)/(dx*dx+dy*dy);t=Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(a[0]+t*dx),py-(a[1]+t*dy));
+}
+function svgPoint(svg,ev){
+  const r=svg.getBoundingClientRect();
+  return [(ev.clientX-r.left)*VBW/r.width,(ev.clientY-r.top)*VBH/r.height];
+}
+function boardHTML(id,dots,label){
+  let g='',d='';
+  for(let x=0;x<=W;x++)g+=`<line x1="${x*CELL}" y1="0" x2="${x*CELL}" y2="${VBH}"/>`;
+  for(let y=0;y<=H;y++)g+=`<line x1="0" y1="${y*CELL}" x2="${VBW}" y2="${y*CELL}"/>`;
+  if(dots)for(let x=0;x<=W;x++)for(let y=0;y<=H;y++)d+=`<circle cx="${x*CELL}" cy="${y*CELL}" r="2.6"/>`;
+  return `<svg id="${id}" class="board" viewBox="0 0 ${VBW} ${VBH}" role="img" aria-label="${label||'격자 위의 도형'}">
+    <rect class="bg" x="1" y="1" width="${VBW-2}" height="${VBH-2}" rx="14"/>
+    <g class="grid">${g}</g>${dots?`<g class="dots">${d}</g>`:''}
+    <g id="${id}-under"></g><g id="${id}-fig"></g><g id="${id}-over"></g></svg>`;
+}
+function centerHTML(f){
+  const c=[f.o[0]*CELL,f.o[1]*CELL];
+  return `<circle class="center" cx="${c[0]}" cy="${c[1]}" r="8"/><text class="lbl o" x="${c[0]+17}" y="${c[1]-16}">ㅇ</text>`;
+}
+/* 도형 그리기: f={v,o,L} hl={v:[[i,cls]],e:[[i,cls]],a:[[i,cls]],lines:[[i,j]],showO} */
+function drawFig(p,f,hl,opt){
+  hl=hl||{};opt=opt||{};
+  const vs=f.v,n=vs.length;
+  const P=i=>vs[((i%n)+n)%n].map(c=>c*CELL);
+  const area=vs.reduce((s,a,i)=>{const b=vs[(i+1)%n];return s+a[0]*b[1]-b[0]*a[1]},0);
+  let s=opt.open?`<polyline class="shape open" points="${polyPts(vs)}"/>`:`<polygon class="shape" points="${polyPts(vs)}"/>`;
+  (hl.a||[]).forEach(([i,c])=>{s+=`<path class="arc ${c}" d="${arcPath(P(i),P(i-1),P(i+1),convexAt(vs,((i%n)+n)%n,area))}"/>`});
+  (hl.e||[]).forEach(([e,c])=>{const a=P(e),b=P(e+1);s+=`<line class="edge-hl ${c}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`});
+  const vm=new Map(hl.v||[]);
+  vs.forEach((pt,i)=>{s+=`<circle class="vtx ${vm.get(i)||''}" cx="${pt[0]*CELL}" cy="${pt[1]*CELL}" r="${vm.has(i)?10:7.5}"/>`});
+  vs.forEach((pt,i)=>{const l=labelPos(pt,f.o);s+=`<text class="lbl" x="${l[0]}" y="${l[1]}">${f.L[i]}</text>`});
+  $('#'+p+'-fig').innerHTML=s;
+  if(!opt.noOver){
+    let o='';
+    (hl.lines||[]).forEach(([i,j])=>{const a=P(i),b=P(j);o+=`<line class="pair" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`});
+    if(hl.showO!==false)o+=centerHTML(f);
+    $('#'+p+'-over').innerHTML=o;
+  }
+}
+function spin(g,o,from,to,cb){
+  const ms=reduced?0:1300,t0=performance.now();
+  (function f(t){
+    const k=ms?Math.min(1,(t-t0)/ms):1,e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,a=from+(to-from)*e;
+    g.setAttribute('transform',`rotate(${a} ${o[0]*CELL} ${o[1]*CELL})`);
+    if(k<1)requestAnimationFrame(f);else if(cb)cb();
+  })(t0);
+}
+const starsHTML=n=>[1,2,3].map(i=>`<span class="${i<=n?'':'off'}">★</span>`).join('');
+function starSum(m){return Object.values(save[m]).reduce((a,r)=>a+(r.stars||0),0)}
+
+/* ---------- views ---------- */
+const view=$('#view');
+let S=null;
+function setBack(fn){const b=$('#btnBack');if(fn){b.hidden=false;b.onclick=fn}else b.hidden=true}
+
+function home(){
+  S=null;setBack(null);
+  view.innerHTML=`
+  <section class="hero">
+    <h2>돌려라, 180°!</h2>
+    <p>한 점을 중심으로 반 바퀴 돌려도 똑같이 겹치는 점대칭도형. 대응점·대응변·대응각을 찾고, 직접 그려서 완성해 보세요.</p>
+  </section>
+  <div class="card heroboard boardwrap">${boardHTML('hb',false,'점대칭도형 예시')}
+    <div class="row center"><button class="btn ghost" id="hspin">🔄 돌려 보기</button></div></div>
+  <div class="modes">
+    <button class="mode" data-mode="A"><h3>🔍 대응요소 탐정</h3><p>겹쳐지는 점·변·각을 찾고, 길이와 크기를 맞혀요.</p><div class="got">모은 별 <span class="stars">★</span> ${starSum('A')} / 30</div></button>
+    <button class="mode" data-mode="B"><h3>✏️ 점대칭도형 그리기</h3><p>반쪽 도형을 보고 대응점을 찍어서 점대칭도형을 완성해요.</p><div class="got">모은 별 <span class="stars">★</span> ${starSum('B')} / 30</div></button>
+    <button class="mode wide" data-mode="C"><h3>🎨 자유 그리기</h3><p>안내 없이, 반쪽 도형과 대칭의 중심만 보고 나머지를 직접 그려요. 내 도형도 만들 수 있어요.</p><div class="got">모은 별 <span class="stars">★</span> ${starSum('C')} / 18</div></button>
+    <button class="mode wide" data-mode="D"><h3>🖌️ 점대칭 드로잉</h3><p>그리는 대로 ㅇ을 중심으로 180° 돌린 그림이 반대쪽에 자동으로 따라 그려져요. 연필·붓·도형·색칠·낱자 도장까지!</p><div class="got">전체 화면에서 그리고, 돌려 보고, PNG로 저장해요</div></button>
+  </div>`;
+  const f={v:[[5,3],[10,3],[11,7],[6,7]],o:[8,5],L:KO};
+  drawFig('hb',f,{lines:[[0,2],[1,3]]});
+  let ang=0,busy=false;
+  $('#hspin').onclick=()=>{if(busy)return;busy=true;const g=$('#hb-fig');spin(g,f.o,ang,ang+180,()=>{ang=(ang+180)%360;if(ang===0)g.removeAttribute('transform');busy=false});};
+  view.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>stages(b.dataset.mode));
+}
+
+function stages(mode){
+  if(mode==='C')return stagesC();
+  if(mode==='D')return drawing();
+  S=null;setBack(home);
+  const A=mode==='A';
+  let h=`<div class="card"><h2>${A?'🔍 대응요소 탐정':'✏️ 점대칭도형 그리기'}</h2>
+    <p class="muted" style="margin:6px 0 0">${A?'각 단계에서 도형 하나를 보고 3~5개의 문제를 풀어요. 처음에 맞히면 별이 늘어요.':'점대칭도형의 반쪽이 주어져요. 대응점을 하나씩 찍어서 하나로 이어진 점대칭도형을 완성해요. 힌트를 덜 쓸수록 별이 늘어요.'}</p></div><div class="stagegrid">`;
+  for(let i=1;i<=10;i++){
+    const r=save[mode][i];
+    h+=`<button class="stage" data-s="${i}"><span class="num">${i}</span><span class="stars">${starsHTML(r?r.stars:0)}</span><span class="tag">${(A?TAGS_A:TAGS_B)[i-1]}</span></button>`;
+  }
+  view.innerHTML=h+'</div>';
+  view.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>(A?gameA:gameB)(+b.dataset.s));
+}
+
+function result(mode,stage,stars,score,items){
+  S=null;setBack(()=>stages(mode));
+  const prev=save[mode][stage]||{stars:0,score:0};
+  save[mode][stage]={stars:Math.max(prev.stars,stars),score:Math.max(prev.score,score)};persist();
+  const last=stage>=(mode==='C'?FREE.length:10);
+  view.innerHTML=`<div class="card result">
+    <div class="big">${stars>=3?'🏆':stars===2?'🎉':'👍'}</div>
+    <h2>${stage}단계 완료!</h2>
+    <div class="stars">${starsHTML(stars)}</div>
+    <p class="jua" style="font-size:24px;margin:6px 0">${score}점</p>
+    <ul>${items.map(t=>`<li>${t}</li>`).join('')}</ul>
+    <div class="row center">
+      <button class="btn ghost" id="again">다시 하기</button>
+      <button class="btn ghost" id="menu">단계 선택</button>
+      ${last?'':'<button class="btn primary" id="nx">다음 단계 ▶</button>'}
+    </div></div>`;
+  $('#again').onclick=()=>gameOf(mode)(stage);
+  $('#menu').onclick=()=>stages(mode);
+  if(!last)$('#nx').onclick=()=>gameOf(mode)(stage+1);
+  confetti();sfx.win();window.scrollTo(0,0);
+}
+
+/* ======================= MODE A ======================= */
+function makeFig(key){
+  let half=FIGS[key].map(p=>p.slice());
+  const fx=Math.random()<.5,fy=Math.random()<.5,sw=Math.random()<.5;
+  half=half.map(([x,y])=>{if(fx)x=-x;if(fy)y=-y;if(sw){const t=x;x=y;y=t}return[x,y]});
+  let full=half.concat(half.map(([x,y])=>[-x,-y]));
+  const n=full.length,r=rnd(n);
+  full=full.slice(r).concat(full.slice(0,r));
+  return{v:full.map(([x,y])=>[x+8,y+5]),o:[8,5],n,h:n/2,L:KO.slice(0,n)};
+}
+function opts(correct,cands,fmt){
+  const set=[correct];
+  shuffle(cands).forEach(c=>{if(set.length<4&&c>0&&!set.includes(c))set.push(c)});
+  let k=1;while(set.length<4){if(!set.includes(correct+k))set.push(correct+k);k++}
+  return shuffle(set).map(v=>({label:fmt(v),ok:v===correct}));
+}
+function makeQ(t,f,used){
+  const n=f.n,h=f.h,L=f.L,nm=i=>L[((i%n)+n)%n];
+  const free=()=>{
+    let c=[...Array(n).keys()].filter(i=>!used.has(i)&&!used.has((i+h)%n));
+    if(!c.length){used.clear();c=[...Array(n).keys()]}
+    const i=pick(c);used.add(i);used.add((i+h)%n);return i;
+  };
+  const i=free(),j=(i+h)%n;
+  const angName=x=>`각 ${nm(x-1)}${nm(x)}${nm(x+1)}`;
+  switch(t){
+    case'pt':return{t,kind:'v',target:j,
+      prompt:`점 <b>${nm(i)}</b>의 대응점을 그림에서 찾아 눌러 보세요.`,
+      hint:'대응점은 ㅇ을 지나는 직선 위에서, ㅇ까지의 거리가 같은 반대편 점이에요.',
+      explain:`점 ${nm(i)}과 점 ${nm(j)}은 ㅇ을 중심으로 180° 돌렸을 때 서로 겹치는 <b>대응점</b>이에요.`,
+      hl0:{v:[[i,'src']]},hl1:{v:[[i,'src'],[j,'good']],lines:[[i,j]]}};
+    case'side':return{t,kind:'e',target:j,
+      prompt:`변 <b>${nm(i)}${nm(i+1)}</b>의 대응변을 그림에서 찾아 눌러 보세요.`,
+      hint:'대응변은 ㅇ을 기준으로 반대편에 있고, 길이가 같은 변이에요.',
+      explain:`변 ${nm(i)}${nm(i+1)}과 변 ${nm(j)}${nm(j+1)}은 서로 겹치는 <b>대응변</b>이에요. 길이도 같아요.`,
+      hl0:{e:[[i,'src']]},hl1:{e:[[i,'src'],[j,'good']]}};
+    case'angle':{
+      const others=shuffle([...Array(n).keys()].filter(x=>x!==j)).slice(0,3);
+      const o=shuffle([j].concat(others)).map(x=>({label:angName(x),ok:x===j}));
+      return{t,kind:'c',options:o,
+        prompt:`<b>${angName(i)}</b>의 대응각을 골라 보세요.`,
+        hint:'대응각은 ㅇ을 기준으로 반대편에 있는 각이에요. 🔄 버튼으로 돌려서 확인해 보세요.',
+        explain:`${angName(i)}과 ${angName(j)}은 서로 겹치는 <b>대응각</b>이에요. 크기도 같아요.`,
+        hl0:{a:[[i,'src']]},hl1:{a:[[i,'src'],[j,'good']]}};}
+    case'meas':{
+      const sub=pick(['len','ang','seg1','seg2']);
+      if(sub==='len'){
+        const k=4+rnd(6);
+        return{t,kind:'c',options:opts(k,[k+2,k*2,k-1,k+1,k+3],v=>v+' cm'),
+          prompt:`변 <b>${nm(i)}${nm(i+1)}</b>의 길이가 <b>${k} cm</b>이면, 대응변 ${nm(j)}${nm(j+1)}의 길이는 몇 cm일까요?`,
+          hint:'대응변의 길이는 서로 같아요.',
+          explain:`대응변의 길이는 같아서 변 ${nm(j)}${nm(j+1)}도 ${k} cm예요.`,
+          hl0:{e:[[i,'src']]},hl1:{e:[[i,'src'],[j,'good']]}};
+      }
+      if(sub==='ang'){
+        const a=pick([50,60,70,80,110,120,130,140]);
+        return{t,kind:'c',options:opts(a,[180-a,90,a+30,a-30,360-a],v=>v+'°'),
+          prompt:`${angName(i)}의 크기가 <b>${a}°</b>이면, 대응각 ${angName(j)}의 크기는 몇 도일까요?`,
+          hint:'대응각의 크기는 서로 같아요.',
+          explain:`대응각의 크기는 같아서 ${angName(j)}도 ${a}°예요.`,
+          hl0:{a:[[i,'src']]},hl1:{a:[[i,'src'],[j,'good']]}};
+      }
+      const k=3+rnd(7);
+      const hl={v:[[i,'src'],[j,'src']],lines:[[i,j]]};
+      if(sub==='seg1')return{t,kind:'c',options:opts(k,[2*k,k+2,k-1,2*k+1],v=>v+' cm'),
+        prompt:`대응점 ${nm(i)}과 ${nm(j)}을 이은 선분은 ㅇ을 지나요. 선분 ${nm(i)}ㅇ이 <b>${k} cm</b>이면 선분 ㅇ${nm(j)}은 몇 cm일까요?`,
+        hint:'ㅇ은 대응점을 이은 선분의 한가운데예요. 양쪽 길이가 같아요.',
+        explain:`ㅇ은 선분 ${nm(i)}${nm(j)}의 한가운데라서 선분 ㅇ${nm(j)}도 ${k} cm예요.`,hl0:hl,hl1:hl};
+      return{t,kind:'c',options:opts(2*k,[k,k+2,2*k+2,3*k],v=>v+' cm'),
+        prompt:`선분 ${nm(i)}ㅇ이 <b>${k} cm</b>일 때, 대응점끼리 이은 선분 ${nm(i)}${nm(j)}은 몇 cm일까요?`,
+        hint:'ㅇ에서 양쪽 대응점까지의 거리가 같으니, 전체 길이는 한쪽의 2배예요.',
+        explain:`선분 ${nm(i)}ㅇ과 선분 ㅇ${nm(j)}이 각각 ${k} cm라서 전체는 ${2*k} cm예요.`,hl0:hl,hl1:hl};
+    }
+    case'center':{
+      const hl0={v:[[i,'src'],[j,'src']],lines:[[i,j]],showO:false};
+      return{t,kind:'g',
+        prompt:`대응점 <b>${nm(i)}</b>과 <b>${nm(j)}</b>을 이은 선분의 한가운데가 <b>대칭의 중심</b>이에요. 격자점에서 찾아 눌러 보세요.`,
+        hint:'선분의 한가운데는 양 끝에서 같은 칸 수만큼 떨어져 있어요. 가로, 세로 칸을 세어 보세요.',
+        explain:`점 ${nm(i)}에서 ${nm(j)}까지의 한가운데가 바로 <b>대칭의 중심 ㅇ</b>이에요.`,
+        hl0,hl1:Object.assign({},hl0,{showO:true})};
+    }
+  }
+}
+
+function gameA(stage){
+  const key=STAGE_FIG[stage-1]||pick(['sTet','sSlant','zig2']);
+  const f=makeFig(key),used=new Set();
+  const qs=STAGE_Q[stage-1].map(t=>makeQ(t,f,used));
+  S={mode:'A',stage,f,qs,qi:0,score:0,first:0,combo:0,tries:0,locked:false,ang:0,busy:false,results:[]};
+  setBack(()=>stages('A'));
+  view.innerHTML=`
+  <div class="hud"><span class="pill">${stage}단계</span><div class="pdots" id="pdots"></div><span class="pill">⭐ <b id="sc">0</b></span></div>
+  <div class="card boardwrap">${boardHTML('bd',false,'점대칭도형 문제 그림')}
+    <div class="row center"><button class="btn ghost" id="spin">🔄 180° 돌려 보기</button></div></div>
+  <div class="card">
+    <div id="qtext" class="qtext"></div><div id="choices" class="choices"></div>
+    <div id="fb" class="fb" aria-live="polite"></div>
+    <div class="row center"><button class="btn primary" id="next" hidden>다음 ▶</button></div>
+  </div>`;
+  $('#bd').addEventListener('click',onBoardA);
+  $('#spin').onclick=()=>{
+    if(S.busy)return;S.busy=true;const g=$('#bd-fig');
+    spin(g,S.f.o,S.ang,S.ang+180,()=>{S.ang=(S.ang+180)%360;if(S.ang===0)g.removeAttribute('transform');S.busy=false});
+  };
+  $('#next').onclick=()=>{S.qi++;if(S.qi>=S.qs.length)finishA();else showQ()};
+  showQ();
+}
+function showQ(){
+  const q=S.qs[S.qi];S.q=q;S.tries=0;S.locked=false;
+  if(S.ang){$('#bd-fig').removeAttribute('transform');S.ang=0}
+  $('#pdots').innerHTML=S.qs.map((_,i)=>`<i class="${i<S.qi?'on':i===S.qi?'cur':''}"></i>`).join('');
+  $('#sc').textContent=S.score;
+  $('#qtext').innerHTML=q.prompt;
+  const fb=$('#fb');fb.className='fb';fb.innerHTML='';
+  $('#next').hidden=true;
+  $('#spin').hidden=q.kind==='g';
+  const ch=$('#choices');ch.innerHTML='';
+  if(q.kind==='c'){
+    q.options.forEach(o=>{
+      const b=document.createElement('button');b.className='choice';b.textContent=o.label;
+      b.onclick=()=>{if(S.locked)return;if(o.ok){b.classList.add('ok');judgeA(true)}else{b.classList.add('bad');b.disabled=true;judgeA(false)}};
+      ch.appendChild(b);
+    });
+  }
+  $('#bd').classList.toggle('clicky',q.kind!=='c');
+  drawFig('bd',S.f,q.hl0);
+}
+function onBoardA(ev){
+  if(S.locked||!S.q||S.q.kind==='c')return;
+  const q=S.q,f=S.f,[x,y]=svgPoint($('#bd'),ev);
+  if(q.kind==='v'){
+    let best=-1,bd=30;
+    f.v.forEach((p,i)=>{const d=Math.hypot(x-p[0]*CELL,y-p[1]*CELL);if(d<bd){bd=d;best=i}});
+    if(best<0)return;judgeA(best===q.target);
+  }else if(q.kind==='e'){
+    let best=-1,bd=20;const n=f.n;
+    for(let e=0;e<n;e++){const a=f.v[e].map(c=>c*CELL),b=f.v[(e+1)%n].map(c=>c*CELL);const d=segDist(x,y,a,b);if(d<bd){bd=d;best=e}}
+    if(best<0)return;judgeA(best===q.target);
+  }else if(q.kind==='g'){
+    const gx=Math.round(x/CELL),gy=Math.round(y/CELL);
+    if(Math.hypot(x-gx*CELL,y-gy*CELL)>18)return;
+    judgeA(gx===f.o[0]&&gy===f.o[1]);
+  }
+}
+function judgeA(ok){
+  if(S.locked)return;const q=S.q;
+  if(ok){
+    S.locked=true;
+    const pts=S.tries===0?100+Math.min(S.combo,5)*10:50;
+    S.score+=pts;
+    if(S.tries===0){S.first++;S.combo++}else S.combo=0;
+    S.results.push(S.tries===0?'ok':'half');
+    sfx.ok();endQ(true,pts);
+  }else{
+    S.tries++;S.combo=0;sfx.bad();shake();
+    if(S.tries>=2){S.locked=true;S.results.push('miss');endQ(false,0)}
+    else{const fb=$('#fb');fb.className='fb show bad';fb.innerHTML='아쉬워요! '+q.hint}
+  }
+}
+function endQ(ok,pts){
+  const q=S.q,fb=$('#fb');
+  $('#sc').textContent=S.score;
+  fb.className='fb show '+(ok?'good':'info');
+  fb.innerHTML=(ok?(pts>=100?`정답! +${pts}점 `:`정답! +${pts}점 `):'정답은 이거예요. ')+q.explain;
+  document.querySelectorAll('.choice').forEach((b,i)=>{b.disabled=true;if(q.options[i].ok)b.classList.add('ok')});
+  drawFig('bd',S.f,q.hl1);
+  const nx=$('#next');nx.hidden=false;nx.textContent=S.qi>=S.qs.length-1?'결과 보기 ▶':'다음 ▶';
+  $('#pdots').innerHTML=S.qs.map((_,i)=>`<i class="${i<=S.qi?'on':''}"></i>`).join('');
+}
+function finishA(){
+  const n=S.qs.length,acc=S.first/n,stars=acc>=.8?3:acc>=.5?2:1;
+  const items=[`처음에 맞힌 문제 ${S.first} / ${n}`,`다시 도전해서 맞힌 문제 ${S.results.filter(r=>r==='half').length}개`,`아쉽게 놓친 문제 ${S.results.filter(r=>r==='miss').length}개`];
+  result('A',S.stage,stars,S.score,items);
+}
+
+/* ======================= MODE B : 그리기 (반쪽 → 점대칭도형 완성) ======================= */
+function gameOf(m){return m==='A'?gameA:m==='B'?gameB:gameC}
+const keyOf=p=>p[0]+','+p[1];
+const fbSet=(cls,html)=>{const fb=$('#fb');if(!fb)return;fb.className=cls?'fb show '+cls:'fb';fb.innerHTML=html||''};
+function snap(ev){
+  const [x,y]=svgPoint($('#bd'),ev),gx=Math.round(x/CELL),gy=Math.round(y/CELL);
+  if(gx<0||gy<0||gx>W||gy>H||Math.hypot(x-gx*CELL,y-gy*CELL)>20)return null;
+  return [gx,gy];
+}
+function bindPreview(onClick){
+  const svg=$('#bd');svg.classList.add('clicky');
+  svg.addEventListener('click',onClick);
+  svg.addEventListener('pointermove',ev=>{const pv=$('#pv');if(!pv)return;const [x,y]=svgPoint(svg,ev);pv.setAttribute('cx',Math.round(x/CELL)*CELL);pv.setAttribute('cy',Math.round(y/CELL)*CELL)});
+  svg.addEventListener('pointerleave',()=>{const pv=$('#pv');if(pv){pv.setAttribute('cx',-50);pv.setAttribute('cy',-50)}});
+}
+function crossP(a,b,c){return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])}
+function onSegP(a,b,c){return Math.min(a[0],b[0])<=c[0]&&c[0]<=Math.max(a[0],b[0])&&Math.min(a[1],b[1])<=c[1]&&c[1]<=Math.max(a[1],b[1])}
+function segsCross(p1,p2,p3,p4){
+  const d1=crossP(p3,p4,p1),d2=crossP(p3,p4,p2),d3=crossP(p1,p2,p3),d4=crossP(p1,p2,p4);
+  if(((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0)))return true;
+  return (d1===0&&onSegP(p3,p4,p1))||(d2===0&&onSegP(p3,p4,p2))||(d3===0&&onSegP(p1,p2,p3))||(d4===0&&onSegP(p1,p2,p4));
+}
+function simplePoly(vs){
+  const n=vs.length;
+  if(new Set(vs.map(keyOf)).size!==n)return false;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const adj=(j===i+1)||(i===0&&j===n-1);
+    const a=vs[i],b=vs[(i+1)%n],c=vs[j],d=vs[(j+1)%n];
+    if(adj){
+      const sh=(j===i+1)?b:a,o1=(j===i+1)?a:b,o2=(j===i+1)?d:c;
+      if(crossP(sh,o1,o2)===0&&(o1[0]-sh[0])*(o2[0]-sh[0])+(o1[1]-sh[1])*(o2[1]-sh[1])>0)return false;
+    }else if(segsCross(a,b,c,d))return false;
+  }
+  return true;
+}
+/* 점대칭도형 전체(full)와 처음 보여 줄 부분(given) 만들기 */
+function buildLv(lv){
+  const o=lv.o,full=lv.h.concat(lv.h.map(([x,y])=>[2*o[0]-x,2*o[1]-y]));
+  return{o,full,n:full.length,hh:lv.h.length,m:lv.m,given:full.slice(0,lv.m)};
+}
+function offsetText(src,dst){
+  const v=S.L.full[src],o=S.L.o,dx=v[0]-o[0],dy=v[1]-o[1],a=[],b=[];
+  if(dx){a.push(`${dx>0?'오른쪽':'왼쪽'}으로 ${Math.abs(dx)}칸`);b.push(`${dx>0?'왼쪽':'오른쪽'}으로 ${Math.abs(dx)}칸`)}
+  if(dy){a.push(`${dy>0?'아래':'위'}로 ${Math.abs(dy)}칸`);b.push(`${dy>0?'위':'아래'}로 ${Math.abs(dy)}칸`)}
+  return `점 ${KO[src]}은 ㅇ에서 ${a.join(', ')} 떨어져 있어요. 대응점 ${KO[dst]}은 ㅇ에서 반대쪽, 즉 ${b.join(', ')} 간 곳이에요.`;
+}
+/* B·C 공통 그림: 주어진 선(열린 선) + 찍은 점. 완성되면 하나의 점대칭도형 */
+function renderHalf(s,placed,o){
+  const L=s.L;
+  if(s.done)drawFig('bd',{v:L.full,o:L.o,L:KO},{},{noOver:true});
+  else drawFig('bd',s.f,{v:o.srcHL>=0?[[o.srcHL,'src']]:[]},{noOver:true,open:true});
+  let u='';
+  if(s.done){
+    for(let i=0;i<L.hh;i++){const a=L.full[i],b=L.full[i+L.hh];u+=`<line class="pair" x1="${a[0]*CELL}" y1="${a[1]*CELL}" x2="${b[0]*CELL}" y2="${b[1]*CELL}"/>`}
+  }else if(placed.length){
+    u+=`<polyline class="trace" points="${polyPts([L.given[L.m-1]].concat(placed))}"/>`;
+    if(o.closing){const a=placed[placed.length-1],b=L.given[0];u+=`<line class="trace" style="opacity:.45" x1="${a[0]*CELL}" y1="${a[1]*CELL}" x2="${b[0]*CELL}" y2="${b[1]*CELL}"/>`}
+  }
+  $('#bd-under').innerHTML=u;
+  let ov=centerHTML({o:L.o});
+  if(s.done){
+    for(let i=L.hh;i<L.n;i++){const p=L.full[i];ov+=`<circle class="vtx img" cx="${p[0]*CELL}" cy="${p[1]*CELL}" r="8"/>`}
+  }else{
+    if(o.hint){const v=L.full[o.hint[0]],t=L.full[o.hint[1]];ov+=`<line class="hintline" x1="${v[0]*CELL}" y1="${v[1]*CELL}" x2="${t[0]*CELL}" y2="${t[1]*CELL}"/>`}
+    placed.forEach((p,i)=>{
+      ov+=`<circle class="vtx ${o.bad&&o.bad.has(keyOf(p))?'wrong':'img'}" cx="${p[0]*CELL}" cy="${p[1]*CELL}" r="8"/>`;
+      if(o.labels){const l=labelPos(p,L.o);ov+=`<text class="lbl" x="${l[0]}" y="${l[1]}">${KO[L.m+i]}</text>`}
+    });
+  }
+  ov+=`<circle id="pv" class="pv" r="12" cx="-50" cy="-50"/><g id="bd-ghost"></g>`;
+  $('#bd-over').innerHTML=ov;
+}
+function ghostSpin(){
+  const g=$('#bd-ghost');if(!g||S.busy)return;S.busy=true;
+  const L=S.L;
+  g.innerHTML=`<polyline class="ghost" points="${polyPts(L.full.slice(0,L.hh))}"/>`;
+  spin(g,L.o,0,180,()=>{S.busy=false;confetti()});
+}
+const DONE_TEXT='🎉 <b>점대칭도형 완성!</b> 처음 주어진 선을 ㅇ을 중심으로 180° 돌리면 새로 그린 선과 꼭 겹쳐져요. 대응점끼리 이은 선분은 ㅇ에서 반으로 나뉘어요.';
+
+function gameB(stage){
+  const L=buildLv(DRAW[stage-1]);
+  S={mode:'B',stage,L,f:{v:L.given,o:L.o,L:KO},k:L.m,miss:0,hints:0,wrong:0,hintUsed:false,hintK:-1,score:0,done:false,busy:false};
+  setBack(()=>stages('B'));
+  view.innerHTML=`
+  <div class="hud"><span class="pill">${stage}단계</span><div class="pdots" id="pdots"></div><span class="pill">⭐ <b id="sc">0</b></span></div>
+  <div class="card boardwrap">${boardHTML('bd',true,'점대칭도형 그리기 격자')}</div>
+  <div class="card">
+    <div id="qtext" class="qtext"></div>
+    <div id="fb" class="fb" aria-live="polite"></div>
+    <div class="row center" id="acts"></div>
+  </div>`;
+  bindPreview(onBoardB);
+  refreshB();
+}
+function refreshB(){
+  const s=S,L=s.L,placed=L.full.slice(L.m,s.k),total=L.n-L.m;
+  $('#sc').textContent=s.score;
+  $('#pdots').innerHTML=Array.from({length:total},(_,i)=>{const d=i+L.m;return `<i class="${s.done||d<s.k?'on':d===s.k?'cur':''}"></i>`}).join('');
+  renderHalf(s,placed,{srcHL:s.done?-1:s.k-L.hh,hint:(!s.done&&s.hintK===s.k)?[s.k-L.hh,s.k]:null,labels:true,closing:false});
+  const q=$('#qtext'),acts=$('#acts');
+  if(s.done){
+    q.innerHTML=DONE_TEXT;
+    acts.innerHTML=`<button class="btn ghost" id="again2">🔄 다시 돌려 보기</button><button class="btn primary" id="fin">결과 보기 ▶</button>`;
+    $('#again2').onclick=ghostSpin;$('#fin').onclick=finishB;
+  }else{
+    q.innerHTML=`점 <b>${KO[s.k-L.hh]}</b>의 대응점 <b>${KO[s.k]}</b>을 격자점에 눌러서 찍어 보세요. <span class="muted">(${s.k-L.m+1} / ${total})</span>`;
+    acts.innerHTML=`<button class="btn ghost" id="hint">💡 힌트 보기</button>`;
+    $('#hint').onclick=showHintB;
+  }
+}
+function showHintB(){
+  if(S.done)return;
+  if(!S.hintUsed){S.hintUsed=true;S.hints++}
+  S.hintK=S.k;refreshB();
+  fbSet('info','💡 '+offsetText(S.k-S.L.hh,S.k));
+}
+function onBoardB(ev){
+  if(S.done)return;
+  const p=snap(ev);if(!p)return;
+  const t=S.L.full[S.k];
+  if(p[0]===t[0]&&p[1]===t[1]){
+    const gain=Math.max(30,100-30*S.wrong-(S.hintUsed?30:0));
+    S.score+=gain;S.k++;S.wrong=0;S.hintUsed=false;S.hintK=-1;sfx.put();
+    if(S.k>=S.L.n){S.done=true;S.score+=50;fbSet('');refreshB();sfx.ok();setTimeout(ghostSpin,350)}
+    else{refreshB();fbSet('good',`좋아요! +${gain}점`)}
+  }else{
+    S.wrong++;S.miss++;sfx.bad();shake();
+    if(S.wrong>=2){S.hintK=S.k;refreshB();fbSet('bad','다시 생각해 봐요. '+offsetText(S.k-S.L.hh,S.k))}
+    else fbSet('bad',`아쉬워요! 대응점은 점 ${KO[S.k-S.L.hh]}에서 ㅇ을 지나 이은 직선 위에 있고, ㅇ까지의 거리와 같아요.`);
+  }
+}
+function finishB(){
+  const bad=S.miss+S.hints,stars=bad<=1?3:bad<=4?2:1;
+  result('B',S.stage,stars,S.score,[`찍은 대응점 ${S.L.n-S.L.m}개`,`잘못 누른 횟수 ${S.miss}번`,`힌트를 본 횟수 ${S.hints}번`]);
+}
+
+/* ======================= MODE C : 자유 그리기 ======================= */
+function stagesC(){
+  S=null;setBack(home);
+  let h=`<div class="card"><h2>🎨 자유 그리기</h2>
+    <p class="muted" style="margin:6px 0 0">점 하나하나 안내해 주지 않아요. 반쪽 도형과 대칭의 중심만 보고, 이어서 나머지를 직접 그려 점대칭도형을 완성해 보세요. 다 그리면 “다 그렸어요”로 확인해요.</p></div>
+    <button class="mode wide" id="sandbox" style="margin-bottom:14px"><h3>🖍️ 내 도형 만들기</h3><p style="margin:0">빈 격자에서 대칭의 중심을 정하고 도형의 반쪽을 그리면, 나머지 반쪽을 이어서 점대칭도형을 완성해 줘요.</p></button>
+    <div class="stagegrid">`;
+  FREE.forEach((_,k)=>{const i=k+1,r=save.C[i];h+=`<button class="stage" data-s="${i}"><span class="num">${i}</span><span class="stars">${starsHTML(r?r.stars:0)}</span><span class="tag">${TAGS_C[k]}</span></button>`});
+  view.innerHTML=h+'</div>';
+  $('#sandbox').onclick=gameFree;
+  view.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>gameC(+b.dataset.s));
+}
+function gameC(stage){
+  const L=buildLv(FREE[stage-1]);
+  S={mode:'C',stage,L,f:{v:L.given,o:L.o,L:KO},pts:[],checks:0,hints:0,hintK:-1,bad:[],done:false,busy:false,score:0};
+  setBack(stagesC);
+  view.innerHTML=`<div class="hud"><span class="pill">${stage}단계</span><div class="pdots"></div><span class="pill">⭐ <b id="sc">0</b></span></div>
+  <div class="card boardwrap">${boardHTML('bd',true,'자유 그리기 격자')}</div>
+  <div class="card"><div id="qtext" class="qtext"></div><div id="fb" class="fb" aria-live="polite"></div><div class="row center" id="acts"></div></div>`;
+  bindPreview(onBoardC);refreshC();
+}
+function refreshC(){
+  const s=S,L=s.L;
+  if(s.hintK>=0&&s.pts.some(p=>keyOf(p)===keyOf(L.full[s.hintK])))s.hintK=-1;
+  renderHalf(s,s.pts,{srcHL:-1,hint:(!s.done&&s.hintK>=0)?[s.hintK-L.hh,s.hintK]:null,bad:new Set(s.bad),closing:true});
+  $('#sc').textContent=s.score;
+  const q=$('#qtext'),acts=$('#acts');
+  if(s.done){
+    q.innerHTML=DONE_TEXT;
+    acts.innerHTML=`<button class="btn ghost" id="again2">🔄 다시 돌려 보기</button><button class="btn primary" id="fin">결과 보기 ▶</button>`;
+    $('#again2').onclick=ghostSpin;$('#fin').onclick=finishC;
+  }else{
+    q.innerHTML=`점 <b>ㅇ</b>을 중심으로 <b>점대칭도형</b>이 되도록 나머지 부분을 직접 그려 보세요. 처음 선의 끝에서 이어지는 꼭짓점을 차례대로 눌러 이어 주세요. <span class="muted">(찍은 점 ${s.pts.length}개)</span>`;
+    acts.innerHTML=`<button class="btn ghost" id="undo">↩ 하나 지우기</button><button class="btn ghost" id="clr">🗑 모두 지우기</button><button class="btn ghost" id="hint">💡 힌트</button><button class="btn primary" id="chk">✅ 다 그렸어요</button>`;
+    $('#undo').onclick=()=>{S.pts.pop();S.bad=[];fbSet('');refreshC()};
+    $('#clr').onclick=()=>{S.pts=[];S.bad=[];S.hintK=-1;fbSet('');refreshC()};
+    $('#hint').onclick=hintC;
+    $('#chk').onclick=checkC;
+  }
+}
+function hintC(){
+  const s=S,L=s.L;let k=-1;
+  for(let i=L.m;i<L.n;i++)if(!s.pts.some(q=>keyOf(q)===keyOf(L.full[i]))){k=i;break}
+  if(k<0){fbSet('info','필요한 점은 다 찍었어요! 이어진 순서가 맞는지 확인해 보세요.');return}
+  if(s.hintK!==k)s.hints++;
+  s.hintK=k;refreshC();fbSet('info','💡 '+offsetText(k-L.hh,k));
+}
+function onBoardC(ev){
+  if(S.done)return;const p=snap(ev);if(!p)return;
+  const L=S.L;
+  if(p[0]===L.o[0]&&p[1]===L.o[1]){fbSet('bad','그 점은 대칭의 중심 ㅇ이에요. 도형의 꼭짓점을 찍어 보세요.');return}
+  if(S.pts.some(q=>keyOf(q)===keyOf(p))||L.given.some(q=>keyOf(q)===keyOf(p))){fbSet('bad','이미 있는 점이에요.');return}
+  if(S.pts.length>=12){fbSet('bad','점은 12개까지 찍을 수 있어요.');return}
+  S.pts.push(p);S.bad=[];sfx.put();fbSet('');refreshC();
+}
+function checkC(){
+  const s=S,L=s.L,P=s.pts,exp=L.full.slice(L.m),n=exp.length;
+  if(!P.length){fbSet('bad','먼저 대응하는 꼭짓점을 찍어 주세요.');return}
+  s.checks++;
+  const E=new Map(exp.map((p,i)=>[keyOf(p),i]));
+  const good=P.filter(p=>E.has(keyOf(p))),bad=P.filter(p=>!E.has(keyOf(p)));
+  const missing=n-good.length;
+  if(!bad.length&&!missing&&P.length===n){
+    const idx=P.map(p=>E.get(keyOf(p)));
+    if(idx.every((v,i)=>v===i)||idx.every((v,i)=>v===n-1-i)){
+      s.done=true;s.score=Math.max(50,200+30*n-50*(s.checks-1)-40*s.hints);
+      sfx.ok();refreshC();fbSet('good',`정답! +${s.score}점`);setTimeout(ghostSpin,350);
+    }else{
+      s.bad=[];sfx.bad();shake();
+      fbSet('bad','점은 모두 맞아요! 그런데 이은 순서가 달라서 도형이 꼬였어요. ↩로 지우고 처음 선의 끝에서 이어지는 차례대로 다시 찍어 보세요.');
+    }
+    return;
+  }
+  s.bad=bad.map(keyOf);sfx.bad();shake();refreshC();
+  fbSet('bad',`맞는 점 ${good.length}개, 잘못 찍은 점 ${bad.length}개(빨간색), 더 찍어야 할 점 ${Math.max(0,missing)}개예요. 대응점은 ㅇ을 지나는 직선 위에서 ㅇ까지의 거리가 같은 반대편 점이에요.`);
+}
+function finishC(){
+  const bad=(S.checks-1)+S.hints,stars=bad<=0?3:bad<=2?2:1;
+  result('C',S.stage,stars,S.score,[`그린 꼭짓점 ${S.L.n-S.L.m}개`,`확인한 횟수 ${S.checks}번`,`힌트를 본 횟수 ${S.hints}번`]);
+}
+
+/* ---- 내 도형 만들기: 반쪽을 그리면 점대칭도형으로 완성 ---- */
+function gameFree(){
+  S={mode:'F',phase:'center',o:null,pts:[],L:null,done:false,busy:false};
+  setBack(stagesC);
+  view.innerHTML=`<div class="card boardwrap">${boardHTML('bd',true,'내 도형 만들기 격자')}</div>
+  <div class="card"><div id="qtext" class="qtext"></div><div id="fb" class="fb" aria-live="polite"></div><div class="row center" id="acts"></div></div>`;
+  bindPreview(onBoardF);refreshF();
+}
+function refreshF(){
+  const s=S,o=s.o;
+  let g='';
+  if(s.done){
+    g+=`<polygon class="shape" points="${polyPts(s.L.full)}"/>`;
+    s.L.full.forEach((p,i)=>{g+=`<circle class="vtx${i>=s.L.hh?' img':''}" cx="${p[0]*CELL}" cy="${p[1]*CELL}" r="7.5"/>`;const l=labelPos(p,o);g+=`<text class="lbl" x="${l[0]}" y="${l[1]}">${KO[i]}</text>`});
+  }else{
+    if(s.pts.length>1)g+=`<polyline class="shape open" points="${polyPts(s.pts)}"/>`;
+    s.pts.forEach((p,i)=>{g+=`<circle class="vtx" cx="${p[0]*CELL}" cy="${p[1]*CELL}" r="7.5"/>`;if(o){const l=labelPos(p,o);g+=`<text class="lbl" x="${l[0]}" y="${l[1]}">${KO[i]}</text>`}});
+  }
+  $('#bd-fig').innerHTML=g;
+  let u='';
+  if(s.done)for(let i=0;i<s.L.hh;i++){const a=s.L.full[i],b=s.L.full[i+s.L.hh];u+=`<line class="pair" x1="${a[0]*CELL}" y1="${a[1]*CELL}" x2="${b[0]*CELL}" y2="${b[1]*CELL}"/>`}
+  $('#bd-under').innerHTML=u;
+  const ov=(o?centerHTML({o}):'')+`<circle id="pv" class="pv" r="12" cx="-50" cy="-50"/><g id="bd-ghost"></g>`;
+  $('#bd-over').innerHTML=ov;
+  const q=$('#qtext'),acts=$('#acts');
+  if(s.done){
+    q.innerHTML=`🎉 <b>내 점대칭도형 완성!</b> 내가 그린 선을 ㅇ을 중심으로 180° 돌리면 나머지 반쪽과 꼭 겹쳐져요. 꼭짓점이 ${s.L.n}개인 도형이에요.`;
+    acts.innerHTML=`<button class="btn ghost" id="again2">🔄 다시 돌려 보기</button><button class="btn primary" id="rst">새로 만들기</button>`;
+    $('#again2').onclick=ghostSpin;$('#rst').onclick=gameFree;
+  }else if(s.phase==='center'){
+    q.innerHTML=`① 먼저 <b>대칭의 중심 ㅇ</b>이 될 점을 격자점에 찍어 보세요.`;
+    acts.innerHTML='';
+  }else{
+    q.innerHTML=`② 도형의 <b>반쪽</b>을 그려요. 꼭짓점을 차례대로 눌러 선으로 이어 보세요(2개 이상, 5개까지). <b>완성하기</b>를 누르면 ㅇ을 중심으로 나머지 반쪽이 이어져 점대칭도형이 돼요. <span class="muted">(찍은 점 ${s.pts.length}개)</span>`;
+    acts.innerHTML=`<button class="btn ghost" id="undo">↩ 하나 지우기</button><button class="btn ghost" id="cen">ㅇ 다시 정하기</button><button class="btn primary" id="mk">✨ 완성하기</button>`;
+    $('#undo').onclick=()=>{S.pts.pop();fbSet('');refreshF()};
+    $('#cen').onclick=()=>{S.phase='center';S.o=null;S.pts=[];fbSet('');refreshF()};
+    $('#mk').onclick=makeF;
+  }
+}
+function onBoardF(ev){
+  if(S.done)return;const p=snap(ev);if(!p)return;
+  if(S.phase==='center'){S.o=p;S.phase='draw';sfx.put();fbSet('');refreshF();return}
+  if(p[0]===S.o[0]&&p[1]===S.o[1]){fbSet('bad','그 점은 대칭의 중심 ㅇ이에요. 다른 점을 찍어 주세요.');return}
+  if(S.pts.some(q=>keyOf(q)===keyOf(p))){fbSet('bad','이미 찍은 점이에요.');return}
+  if(S.pts.length>=5){fbSet('bad','반쪽의 꼭짓점은 5개까지 찍을 수 있어요.');return}
+  S.pts.push(p);sfx.put();fbSet('');refreshF();
+}
+function makeF(){
+  const s=S,o=s.o;
+  if(s.pts.length<2){fbSet('bad','꼭짓점을 2개 이상 찍어 주세요.');return}
+  const full=s.pts.concat(s.pts.map(([x,y])=>[2*o[0]-x,2*o[1]-y]));
+  if(!full.every(([x,y])=>x>=0&&x<=W&&y>=0&&y<=H)){fbSet('bad','나머지 반쪽이 격자 밖으로 나가요. 도형을 ㅇ에 더 가깝게 그리거나 ㅇ을 다시 정해 보세요.');sfx.bad();return}
+  if(!simplePoly(full)){fbSet('bad','이렇게 그리면 선이 서로 겹치거나 꼬여서 하나의 도형이 되지 않아요. ↩로 지우고 ㅇ을 둘러싸는 방향으로 이어서 다시 그려 보세요.');sfx.bad();return}
+  s.L={o,full,n:full.length,hh:s.pts.length,m:s.pts.length};
+  s.done=true;fbSet('');sfx.ok();refreshF();setTimeout(ghostSpin,350);
+}
+
+/* ======================= MODE D : 점대칭 드로잉 (전체 화면 창) ======================= */
+let studioApi=null;
+function drawing(){
+  S=null;
+  if(!studioApi)studioApi=initStudio();
+  studioApi.open();
+}
+function initStudio(){
+  const K=2,VW=1000,VH=700,RW=2000,RH=1400;
+  const mkc=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+  const art=mkc(RW,RH),actx=art.getContext('2d',{willReadFrequently:true});
+  const tmp=mkc(RW,RH),tctx=tmp.getContext('2d',{willReadFrequently:true});
+  const sc=$('#zCanvas'),sctx=sc.getContext('2d'),studio=$('#zStudio');
+  const T={};
+  function loadP(){const s=getComputedStyle(document.documentElement);['ink','blue','accent','muted','gold'].forEach(k=>{T[k]=s.getPropertyValue('--'+k).trim()||'#888'})}
+  loadP();
+  try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',loadP)}catch(e){}
+  const ST={tool:'pencil',color:'#E24B55',w:12,alpha:100,sym:'point',fill:true,grid:false,center:true,hover:true,saveCenter:true,bg:'#FFFFFF',glyph:'ㄹ',
+    ops:[],redo:[],cur:null,ptr:null,open:false,view:{s:1,ox:0,oy:0,dpr:1},clearArm:0,cx:500,cy:350,cpre:null,spin:null,loop:false,sel:null,lasso:null,selDrag:null};
+  /* 대칭 변환: none = 그대로, point = ㅇ을 중심으로 180° 돌리기 */
+  const TF={none:[[1,0,0,1]],point:[[1,0,0,1],[-1,0,0,-1]]};
+  function withT(c,m,fn){c.save();c.scale(K,K);c.translate(ST.cx,ST.cy);c.transform(m[0],m[1],m[2],m[3],0,0);c.translate(-ST.cx,-ST.cy);fn();c.restore()}
+  function mapP(m,p){const dx=p.x-ST.cx,dy=p.y-ST.cy;return {x:ST.cx+m[0]*dx+m[2]*dy,y:ST.cy+m[1]*dx+m[3]*dy}}
+  function rng(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+  function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)]}
+  function toHex(r,g,b){return '#'+[r,g,b].map(v=>{v=Math.max(0,Math.min(255,Math.round(v)));return (v<16?'0':'')+v.toString(16)}).join('')}
+  function bgDark(){const c=hexToRgb(ST.bg);return (c[0]*299+c[1]*587+c[2]*114)/1000<110}
+  const ease=t=>t<.5?2*t*t:1-2*(1-t)*(1-t);
+  function dashedLine(c,a,b,color,w){c.save();c.setLineDash([16,12]);c.lineWidth=w||5;c.strokeStyle=color;c.lineCap='round';c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke();c.restore()}
+
+  function strokePath(c,pts){
+    if(pts.length===1){c.beginPath();c.arc(pts[0].x,pts[0].y,c.lineWidth/2,0,Math.PI*2);c.fillStyle=c.strokeStyle;c.fill();return}
+    c.beginPath();c.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length-1;i++)c.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
+    const l=pts[pts.length-1];c.lineTo(l.x,l.y);c.stroke();
+  }
+  function paintStroke(c,op){
+    const pts=op.pts,w=op.w;let i;
+    c.lineCap='round';c.lineJoin='round';c.strokeStyle=op.color;c.fillStyle=op.color;
+    if(op.tool==='pencil'){c.lineWidth=w;strokePath(c,pts)}
+    else if(op.tool==='marker'){c.lineWidth=w*2.4;strokePath(c,pts)}
+    else if(op.tool==='dots'){c.lineWidth=w;c.setLineDash([0.1,w*1.9]);strokePath(c,pts);c.setLineDash([])}
+    else if(op.tool==='neon'){
+      c.save();c.lineWidth=w*0.9;c.shadowColor=op.color;c.shadowBlur=w*K*1.6;strokePath(c,pts);
+      c.shadowBlur=0;c.lineWidth=Math.max(1.5,w*0.3);c.strokeStyle='#FFFFFF';strokePath(c,pts);c.restore();
+    }else if(op.tool==='rainbow'){
+      c.lineWidth=w;
+      if(pts.length===1){c.fillStyle='hsl('+op.hue+',90%,55%)';c.beginPath();c.arc(pts[0].x,pts[0].y,w/2,0,Math.PI*2);c.fill()}
+      for(i=1;i<pts.length;i++){c.strokeStyle='hsl('+((op.hue+i*4)%360)+',90%,55%)';c.beginPath();c.moveTo(pts[i-1].x,pts[i-1].y);c.lineTo(pts[i].x,pts[i].y);c.stroke()}
+    }else if(op.tool==='spray'){
+      const rnd=rng(op.seed),n=Math.round(w*0.7)+4,R=w*1.6;
+      for(i=0;i<pts.length;i++)for(let k=0;k<n;k++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*R;c.fillRect(pts[i].x+Math.cos(a)*r,pts[i].y+Math.sin(a)*r,1.4,1.4)}
+    }else if(op.tool==='brush'){
+      let prev=pts[0];
+      c.beginPath();c.arc(prev.x,prev.y,Math.max(.8,prev.r),0,Math.PI*2);c.fill();
+      for(i=1;i<pts.length;i++){
+        const q=pts[i],dx=q.x-prev.x,dy=q.y-prev.y,dist=Math.hypot(dx,dy),step=Math.max(.8,Math.min(prev.r,q.r)*.35),cnt=Math.max(1,Math.ceil(dist/step));
+        for(let t=1;t<=cnt;t++){const f=t/cnt,rr=prev.r+(q.r-prev.r)*f;c.beginPath();c.arc(prev.x+dx*f,prev.y+dy*f,Math.max(.8,rr),0,Math.PI*2);c.fill()}
+        prev=q;
+      }
+    }
+  }
+  const HEART=(function(){
+    const a=[];let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+    for(let i=0;i<=80;i++){const t=i/80*Math.PI*2,x=16*Math.pow(Math.sin(t),3),y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));a.push([x,y]);minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)}
+    return a.map(p=>[(p[0]-minx)/(maxx-minx),(p[1]-miny)/(maxy-miny)]);
+  })();
+  function shapePath(c,kind,x0,y0,x1,y1,p0,p1){
+    const w=x1-x0,h=y1-y0,cx=(x0+x1)/2,cy=(y0+y1)/2;
+    c.beginPath();
+    if(kind==='line'){c.moveTo(p0.x,p0.y);c.lineTo(p1.x,p1.y)}
+    else if(kind==='rect')c.rect(x0,y0,w,h);
+    else if(kind==='ellipse')c.ellipse(cx,cy,Math.max(.1,w/2),Math.max(.1,h/2),0,0,Math.PI*2);
+    else if(kind==='tri'){c.moveTo(cx,y0);c.lineTo(x1,y1);c.lineTo(x0,y1);c.closePath()}
+    else if(kind==='diamond'){c.moveTo(cx,y0);c.lineTo(x1,cy);c.lineTo(cx,y1);c.lineTo(x0,cy);c.closePath()}
+    else if(kind==='hexa'){c.moveTo(x0+w*.25,y0);c.lineTo(x0+w*.75,y0);c.lineTo(x1,cy);c.lineTo(x0+w*.75,y1);c.lineTo(x0+w*.25,y1);c.lineTo(x0,cy);c.closePath()}
+    else if(kind==='star'){
+      for(let i=0;i<10;i++){const ang=(-90+36*i)*Math.PI/180,rr=i%2?.42:1,X=cx+Math.cos(ang)*rr*w/2,Y=cy+Math.sin(ang)*rr*h/2;if(i)c.lineTo(X,Y);else c.moveTo(X,Y)}
+      c.closePath();
+    }else if(kind==='heart'){HEART.forEach((q,k)=>{const X=x0+q[0]*w,Y=y0+q[1]*h;if(k)c.lineTo(X,Y);else c.moveTo(X,Y)});c.closePath()}
+  }
+  function paintShape(c,op){
+    const x0=Math.min(op.p0.x,op.p1.x),x1=Math.max(op.p0.x,op.p1.x),y0=Math.min(op.p0.y,op.p1.y),y1=Math.max(op.p0.y,op.p1.y);
+    c.lineWidth=op.w;c.lineJoin='round';c.lineCap='round';c.strokeStyle=op.color;c.fillStyle=op.color;
+    shapePath(c,op.shape,x0,y0,x1,y1,op.p0,op.p1);
+    if(op.fill&&op.shape!=='line')c.fill();
+    c.stroke();
+  }
+  /* 낱자 도장: 돌려 보면 달라지는(모양이 한쪽으로 치우친) 글자 위주 */
+  const GL={
+    'ㄹ':[['r',0,0,92,26],['r',66,0,26,73],['r',0,47,92,26],['r',0,47,26,73],['r',0,94,92,26]],
+    'ㅏ':[['r',0,0,26,120],['r',26,47,38,26]],
+    'ㅋ':[['r',0,0,92,26],['r',66,0,26,120],['r',0,47,66,26]],
+    'ㅚ':[['r',0,84,80,26],['r',20,44,26,40],['r',74,0,26,120]],
+    'ㄱ':[['r',0,0,84,26],['r',58,0,26,110]],
+    'ㄴ':[['r',0,0,26,110],['r',0,84,84,26]],
+    'ㄷ':[['r',0,0,84,26],['r',0,0,26,110],['r',0,84,84,26]],
+    'ㅗ':[['r',0,50,104,26],['r',39,0,26,50]],
+    'ㅎ':[['r',36,0,24,32],['r',0,24,96,24],['c',48,76,32],['hc',48,76,13]],
+    'ㅁ':[['r',0,0,100,84],['hr',26,26,48,32]]
+  };
+  function glBox(parts){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    parts.forEach(p=>{
+      if(p[0]==='r'||p[0]==='hr'){x0=Math.min(x0,p[1]);y0=Math.min(y0,p[2]);x1=Math.max(x1,p[1]+p[3]);y1=Math.max(y1,p[2]+p[4])}
+      else{x0=Math.min(x0,p[1]-p[3]);y0=Math.min(y0,p[2]-p[3]);x1=Math.max(x1,p[1]+p[3]);y1=Math.max(y1,p[2]+p[3])}
+    });
+    return [x0,y0,x1,y1];
+  }
+  function glyphPath(c,parts){
+    c.beginPath();
+    parts.forEach(p=>{
+      if(p[0]==='r'){c.moveTo(p[1],p[2]);c.lineTo(p[1]+p[3],p[2]);c.lineTo(p[1]+p[3],p[2]+p[4]);c.lineTo(p[1],p[2]+p[4]);c.closePath()}
+      else if(p[0]==='hr'){c.moveTo(p[1],p[2]);c.lineTo(p[1],p[2]+p[4]);c.lineTo(p[1]+p[3],p[2]+p[4]);c.lineTo(p[1]+p[3],p[2]);c.closePath()}
+      else if(p[0]==='c'){c.moveTo(p[1]+p[3],p[2]);c.arc(p[1],p[2],p[3],0,Math.PI*2,false);c.closePath()}
+      else if(p[0]==='hc'){c.moveTo(p[1]+p[3],p[2]);c.arc(p[1],p[2],p[3],Math.PI*2,0,true);c.closePath()}
+    });
+  }
+  function paintStamp(c,op){
+    const parts=GL[op.ch],b=glBox(parts),m=Math.max(b[2]-b[0],b[3]-b[1]),k=op.size/m;
+    c.save();c.translate(op.p.x,op.p.y);c.scale(k,k);c.translate(-(b[0]+b[2])/2,-(b[1]+b[3])/2);
+    glyphPath(c,parts);c.fillStyle=op.color;c.fill('nonzero');c.restore();
+  }
+  function paintOp(c,op){
+    TF[op.sym].forEach(m=>{withT(c,m,()=>{
+      if(op.kind==='stroke')paintStroke(c,op);
+      else if(op.kind==='shape')paintShape(c,op);
+      else if(op.kind==='stamp')paintStamp(c,op);
+    })});
+  }
+  function eraseOp(c,op){
+    TF[op.sym].forEach(m=>{withT(c,m,()=>{
+      c.lineCap='round';c.lineJoin='round';c.strokeStyle='#000';c.lineWidth=op.w*1.8;strokePath(c,op.pts);
+    })});
+  }
+  function floodFill(op){
+    const img=actx.getImageData(0,0,RW,RH),d=img.data,N=RW*RH,mask=new Uint8Array(N),stack=[];let recolor=null;
+    TF[op.sym].forEach(m=>{
+      const q=mapP(m,op.p),sx=Math.round(q.x*K),sy=Math.round(q.y*K);
+      if(sx<0||sy<0||sx>=RW||sy>=RH)return;
+      const si=sy*RW+sx;if(mask[si])return;
+      const tr=d[si*4],tg=d[si*4+1],tb=d[si*4+2],ta=d[si*4+3];
+      if(recolor===null)recolor=ta>200;
+      const match=i=>{const j=i*4;return Math.abs(d[j]-tr)+Math.abs(d[j+1]-tg)+Math.abs(d[j+2]-tb)+Math.abs(d[j+3]-ta)<=70};
+      stack.push(sx,sy);
+      while(stack.length){
+        const y=stack.pop(),x=stack.pop(),i=y*RW+x;
+        if(mask[i]||!match(i))continue;
+        let l=x,r=x,xx;
+        while(l>0&&!mask[y*RW+l-1]&&match(y*RW+l-1))l--;
+        while(r<RW-1&&!mask[y*RW+r+1]&&match(y*RW+r+1))r++;
+        for(xx=l;xx<=r;xx++)mask[y*RW+xx]=1;
+        for(let dy=-1;dy<=1;dy+=2){
+          const ny=y+dy;if(ny<0||ny>=RH)continue;
+          let inRun=false;
+          for(xx=l;xx<=r;xx++){
+            const ok=!mask[ny*RW+xx]&&match(ny*RW+xx);
+            if(ok&&!inRun){stack.push(xx,ny);inRun=true}else if(!ok)inRun=false;
+          }
+        }
+      }
+    });
+    const rgb=hexToRgb(op.color),out=tctx.createImageData(RW,RH),o=out.data;
+    for(let i2=0;i2<N;i2++){
+      if(!mask[i2])continue;
+      const x2=i2%RW,y2=(i2/RW)|0,j=i2*4;
+      o[j]=rgb[0];o[j+1]=rgb[1];o[j+2]=rgb[2];o[j+3]=255;
+      const edge=(x2===0||y2===0||x2===RW-1||y2===RH-1||!mask[i2-1]||!mask[i2+1]||!mask[i2-RW]||!mask[i2+RW]);
+      if(edge){
+        for(let dy2=-1;dy2<=1;dy2++)for(let dx2=-1;dx2<=1;dx2++){
+          const nx=x2+dx2,ny2=y2+dy2;if(nx<0||ny2<0||nx>=RW||ny2>=RH)continue;
+          const k2=(ny2*RW+nx)*4;o[k2]=rgb[0];o[k2+1]=rgb[1];o[k2+2]=rgb[2];o[k2+3]=255;
+        }
+      }
+    }
+    tctx.putImageData(out,0,0);
+    actx.save();actx.globalCompositeOperation=recolor?'source-over':'destination-over';actx.globalAlpha=op.alpha/100;actx.drawImage(tmp,0,0);actx.restore();
+  }
+  function polyClip(c,poly){c.beginPath();poly.forEach((p,i)=>{const x=p.x*K,y=p.y*K;if(i)c.lineTo(x,y);else c.moveTo(x,y)});c.closePath();c.clip()}
+  function selXf(c,s){c.translate(K*(s.ax+s.tx),K*(s.ay+s.ty));c.scale(s.sc,s.sc);c.translate(-K*s.ax,-K*s.ay)}
+  function selMap(s,p){return {x:s.ax+(p.x-s.ax)*s.sc+s.tx,y:s.ay+(p.y-s.ay)*s.sc+s.ty}}
+  function selCorners(s){const b=s.box;return [{x:b.x0,y:b.y0},{x:b.x1,y:b.y0},{x:b.x1,y:b.y1},{x:b.x0,y:b.y1}].map(p=>selMap(s,p))}
+  function selContains(s,p){const q={x:s.ax+(p.x-s.ax-s.tx)/s.sc,y:s.ay+(p.y-s.ay-s.ty)/s.sc},b=s.box;return q.x>=b.x0&&q.x<=b.x1&&q.y>=b.y0&&q.y<=b.y1}
+  function applyOp(op){
+    if(op.kind==='clear')actx.clearRect(0,0,RW,RH);
+    else if(op.kind==='stroke'||op.kind==='shape'||op.kind==='stamp'){
+      tctx.clearRect(0,0,RW,RH);paintOp(tctx,op);
+      actx.save();actx.globalAlpha=op.alpha/100;actx.drawImage(tmp,0,0);actx.restore();
+    }else if(op.kind==='erase'){actx.save();actx.globalCompositeOperation='destination-out';eraseOp(actx,op);actx.restore()}
+    else if(op.kind==='lasso'){
+      tctx.clearRect(0,0,RW,RH);tctx.save();polyClip(tctx,op.poly);tctx.drawImage(art,0,0);tctx.restore();
+      actx.save();polyClip(actx,op.poly);actx.clearRect(0,0,RW,RH);actx.restore();
+      actx.save();selXf(actx,op);actx.drawImage(tmp,0,0);actx.restore();
+    }else if(op.kind==='lassoDel'){actx.save();polyClip(actx,op.poly);actx.clearRect(0,0,RW,RH);actx.restore()}
+    else if(op.kind==='fill')floodFill(op);
+  }
+  function rebuild(){
+    actx.clearRect(0,0,RW,RH);
+    let start=0;for(let i=ST.ops.length-1;i>=0;i--){if(ST.ops[i].kind==='clear'){start=i;break}}
+    for(let i=start;i<ST.ops.length;i++)applyOp(ST.ops[i]);
+  }
+  function refreshTop(){$('#zUndo').disabled=!ST.ops.length;$('#zRedo').disabled=!ST.redo.length}
+  function pushOp(op){ST.ops.push(op);ST.redo=[];refreshTop()}
+  function undo(){if(ST.sel){cancelSel();return}if(!ST.ops.length)return;ST.redo.push(ST.ops.pop());rebuild();refreshTop()}
+  function redo(){if(ST.sel||!ST.redo.length)return;const op=ST.redo.pop();ST.ops.push(op);applyOp(op);refreshTop()}
+  function pickColor(p){
+    const x=Math.max(0,Math.min(RW-1,Math.round(p.x*K))),y=Math.max(0,Math.min(RH-1,Math.round(p.y*K)));
+    const d=actx.getImageData(x,y,1,1).data,bg=hexToRgb(ST.bg),a=d[3]/255;
+    return toHex(d[0]*a+bg[0]*(1-a),d[1]*a+bg[1]*(1-a),d[2]*a+bg[2]*(1-a));
+  }
+  /* ---- 화면 표시 ---- */
+  function drawGrid(c){
+    c.save();c.lineWidth=1.5;c.strokeStyle=bgDark()?'rgba(255,255,255,.16)':'rgba(70,100,140,.22)';
+    for(let i=0;i<=20;i++){c.beginPath();c.moveTo(i*50,0);c.lineTo(i*50,700);c.stroke()}
+    for(let i=0;i<=14;i++){c.beginPath();c.moveTo(0,i*50);c.lineTo(1000,i*50);c.stroke()}
+    c.restore();
+  }
+  function drawCenter(c,x,y,alpha){
+    c.save();c.globalAlpha=alpha==null?1:alpha;
+    c.beginPath();c.arc(x,y,13,0,Math.PI*2);c.fillStyle='#E5337F';c.fill();c.lineWidth=4;c.strokeStyle='#fff';c.stroke();
+    c.font='36px Jua, "Gowun Dodum", sans-serif';c.textAlign='left';c.textBaseline='bottom';
+    c.lineWidth=7;c.strokeStyle='#fff';c.strokeText('ㅇ',x+20,y-14);c.fillStyle='#E5337F';c.fillText('ㅇ',x+20,y-14);
+    c.restore();
+  }
+  function renderCur(){tctx.clearRect(0,0,RW,RH);if(ST.cur&&ST.cur.kind!=='erase')paintOp(tctx,ST.cur)}
+  function sResize(){
+    const st=$('#zStage'),r=st.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+    if(r.width<10||r.height<10)return;
+    sc.width=Math.round(r.width*dpr);sc.height=Math.round(r.height*dpr);
+    const pad=8,s=Math.min((r.width-pad*2)/VW,(r.height-pad*2)/VH);
+    ST.view={s:s,ox:(r.width-VW*s)/2,oy:(r.height-VH*s)/2,dpr:dpr};
+  }
+  function sToW(e){const r=sc.getBoundingClientRect();return {x:(e.clientX-r.left-ST.view.ox)/ST.view.s,y:(e.clientY-r.top-ST.view.oy)/ST.view.s}}
+  function sFrame(){
+    if(!ST.open){ST.loop=false;return}
+    const v=ST.view,dpr=v.dpr;
+    sctx.setTransform(1,0,0,1,0,0);sctx.clearRect(0,0,sc.width,sc.height);
+    sctx.setTransform(dpr*v.s,0,0,dpr*v.s,dpr*v.ox,dpr*v.oy);
+    sctx.save();sctx.shadowColor='rgba(0,0,0,.2)';sctx.shadowBlur=18;sctx.shadowOffsetY=4;sctx.fillStyle=ST.bg;sctx.fillRect(0,0,VW,VH);sctx.restore();
+    sctx.save();sctx.beginPath();sctx.rect(0,0,VW,VH);sctx.clip();
+    if(ST.grid)drawGrid(sctx);
+    /* 180° 돌려 보기: 그림이 ㅇ을 중심으로 반 바퀴 돌아도 처음 모양과 겹쳐요 */
+    let spinning=false;
+    if(ST.spin){
+      const t=Math.min(1,(performance.now()-ST.spin.t0)/ST.spin.dur);
+      if(performance.now()-ST.spin.t0>ST.spin.dur+900)ST.spin=null;
+      else{
+        spinning=true;
+        sctx.save();sctx.globalAlpha=.3;sctx.drawImage(art,0,0,VW,VH);sctx.restore();
+        sctx.save();sctx.translate(ST.cx,ST.cy);sctx.rotate(Math.PI*ease(t));sctx.translate(-ST.cx,-ST.cy);sctx.drawImage(art,0,0,VW,VH);sctx.restore();
+      }
+    }
+    if(!spinning){
+      sctx.drawImage(art,0,0,VW,VH);
+      if(ST.sel){
+        const sl=ST.sel;sctx.save();sctx.translate(sl.ax+sl.tx,sl.ay+sl.ty);sctx.scale(sl.sc,sl.sc);sctx.translate(-sl.ax,-sl.ay);sctx.drawImage(sl.fl,0,0,VW,VH);sctx.restore();
+        const cs=selCorners(sl);
+        sctx.save();sctx.setLineDash([12,8]);sctx.lineWidth=3;sctx.strokeStyle=T.blue;sctx.beginPath();
+        cs.forEach((q,i)=>{if(i)sctx.lineTo(q.x,q.y);else sctx.moveTo(q.x,q.y)});sctx.closePath();sctx.stroke();sctx.setLineDash([]);
+        cs.forEach(q=>{sctx.fillStyle='#fff';sctx.strokeStyle=T.blue;sctx.lineWidth=4;sctx.beginPath();sctx.rect(q.x-11,q.y-11,22,22);sctx.fill();sctx.stroke()});
+        sctx.restore();
+      }
+      if(ST.lasso&&ST.lasso.length>1){
+        sctx.save();sctx.setLineDash([10,7]);sctx.lineWidth=3;sctx.strokeStyle=T.blue;sctx.beginPath();
+        ST.lasso.forEach((q,i)=>{if(i)sctx.lineTo(q.x,q.y);else sctx.moveTo(q.x,q.y)});sctx.stroke();sctx.restore();
+      }
+      if(ST.cur&&ST.cur.kind!=='erase'){renderCur();sctx.globalAlpha=ST.cur.alpha/100;sctx.drawImage(tmp,0,0,VW,VH);sctx.globalAlpha=1}
+    }
+    if(ST.center&&ST.sym==='point'){
+      if(ST.cpre){drawCenter(sctx,ST.cx,ST.cy,.25);drawCenter(sctx,ST.cpre.x,ST.cpre.y,1)}
+      else drawCenter(sctx,ST.cx,ST.cy,1);
+    }
+    if(!spinning&&ST.hover&&ST.ptr&&ST.sym!=='none'&&['pick','fill','lasso','center'].indexOf(ST.tool)<0){
+      const rr=Math.max(8,ST.w*.6+4);
+      TF[ST.sym].forEach((m,i)=>{
+        const q=mapP(m,ST.ptr);
+        if(i>0)dashedLine(sctx,ST.ptr,q,'rgba(229,51,127,.6)',2.5);
+        sctx.beginPath();sctx.arc(q.x,q.y,rr,0,Math.PI*2);sctx.lineWidth=3;sctx.strokeStyle=i?'#E5337F':'#555';sctx.stroke();
+      });
+    }
+    sctx.restore();
+    requestAnimationFrame(sFrame);
+  }
+  /* ---- 올가미 선택 ---- */
+  function createSel(poly){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    poly.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y)});
+    if((x1-x0)<14||(y1-y0)<14)return;
+    const s={poly:poly,box:{x0:x0,y0:y0,x1:x1,y1:y1},ax:(x0+x1)/2,ay:(y0+y1)/2,tx:0,ty:0,sc:1,fl:mkc(RW,RH),bk:mkc(RW,RH)};
+    s.bk.getContext('2d').drawImage(art,0,0);
+    const fc=s.fl.getContext('2d');fc.save();polyClip(fc,poly);fc.drawImage(art,0,0);fc.restore();
+    actx.save();polyClip(actx,poly);actx.clearRect(0,0,RW,RH);actx.restore();
+    ST.sel=s;buildOpts();
+  }
+  function commitSel(){
+    const s=ST.sel;if(!s)return;ST.sel=null;
+    if(s.tx===0&&s.ty===0&&s.sc===1){actx.clearRect(0,0,RW,RH);actx.drawImage(s.bk,0,0);buildOpts();return}
+    actx.save();selXf(actx,s);actx.drawImage(s.fl,0,0);actx.restore();
+    pushOp({kind:'lasso',poly:s.poly,ax:s.ax,ay:s.ay,tx:s.tx,ty:s.ty,sc:s.sc});buildOpts();
+  }
+  function cancelSel(){const s=ST.sel;if(!s)return;ST.sel=null;actx.clearRect(0,0,RW,RH);actx.drawImage(s.bk,0,0);buildOpts()}
+  function deleteSel(){const s=ST.sel;if(!s)return;ST.sel=null;pushOp({kind:'lassoDel',poly:s.poly});buildOpts()}
+  function scaleSel(f){const s=ST.sel;if(!s)return;s.sc=Math.max(.1,Math.min(8,s.sc*f))}
+  function lassoDown(p){
+    const s=ST.sel;
+    if(s){
+      const cs=selCorners(s);
+      for(let i=0;i<4;i++){
+        if(Math.hypot(p.x-cs[i].x,p.y-cs[i].y)<32){const c0=selMap(s,{x:s.ax,y:s.ay});ST.selDrag={mode:'scale',sc0:s.sc,d0:Math.max(10,Math.hypot(cs[i].x-c0.x,cs[i].y-c0.y))};return}
+      }
+      if(selContains(s,p)){ST.selDrag={mode:'move',px:p.x,py:p.y,tx0:s.tx,ty0:s.ty};return}
+      commitSel();
+    }
+    ST.lasso=[{x:p.x,y:p.y}];
+  }
+  function lassoMove(p){
+    const s=ST.sel,d=ST.selDrag;
+    if(d&&s){
+      if(d.mode==='move'){s.tx=d.tx0+p.x-d.px;s.ty=d.ty0+p.y-d.py}
+      else{const c0=selMap(s,{x:s.ax,y:s.ay}),dist=Math.hypot(p.x-c0.x,p.y-c0.y);s.sc=Math.max(.1,Math.min(8,d.sc0*dist/d.d0))}
+    }else if(ST.lasso){const l=ST.lasso[ST.lasso.length-1];if(Math.hypot(p.x-l.x,p.y-l.y)>3)ST.lasso.push({x:p.x,y:p.y})}
+  }
+  /* ---- 입력 ---- */
+  let sDown=false,lastT=0;
+  const SHAPEK=['line','rect','ellipse','tri','diamond','star','heart','hexa'];
+  const effAlpha=()=>ST.tool==='marker'?Math.min(ST.alpha,45):ST.alpha;
+  const snapC=p=>({x:Math.max(0,Math.min(VW,Math.round(p.x/50)*50)),y:Math.max(0,Math.min(VH,Math.round(p.y/50)*50))});
+  sc.addEventListener('pointerdown',e=>{
+    if(ST.spin)return;
+    e.preventDefault();try{sc.setPointerCapture(e.pointerId)}catch(_){}
+    const p=sToW(e);ST.ptr=p;
+    if(p.x<-20||p.x>VW+20||p.y<-20||p.y>VH+20)return;
+    sDown=true;lastT=performance.now();
+    const t=ST.tool;
+    if(t==='lasso'){lassoDown(p);return}
+    if(ST.sel)commitSel();
+    if(t==='center'){ST.cpre=snapC(p);return}
+    if(t==='fill'){const op={kind:'fill',p:p,color:ST.color,alpha:ST.alpha,sym:ST.sym};applyOp(op);pushOp(op);sDown=false;return}
+    if(t==='pick'){ST.color=pickColor(p);buildOpts();sDown=false;return}
+    if(t==='stamp'){const so={kind:'stamp',p:p,ch:ST.glyph,size:ST.w*6+30,color:ST.color,alpha:ST.alpha,sym:ST.sym};applyOp(so);pushOp(so);sDown=false;return}
+    if(SHAPEK.indexOf(t)>=0){ST.cur={kind:'shape',shape:t,p0:p,p1:p,color:ST.color,w:ST.w,alpha:ST.alpha,fill:ST.fill,sym:ST.sym};return}
+    if(t==='eraser'){ST.cur={kind:'erase',pts:[{x:p.x,y:p.y}],w:ST.w,sym:ST.sym,alpha:100};eraseOp(actx,ST.cur);actx.globalCompositeOperation='source-over';return}
+    ST.cur={kind:'stroke',tool:t,pts:[{x:p.x,y:p.y,r:ST.w/2}],color:ST.color,w:ST.w,alpha:effAlpha(),sym:ST.sym,seed:(Math.random()*1e9)|0,hue:(Math.random()*360)|0};
+  });
+  sc.addEventListener('pointermove',e=>{
+    const p=sToW(e);ST.ptr=p;
+    if(sDown&&ST.tool==='center'){e.preventDefault();ST.cpre=snapC(p);return}
+    if(sDown&&ST.tool==='lasso'){e.preventDefault();lassoMove(p);return}
+    if(!sDown||!ST.cur)return;
+    e.preventDefault();
+    const c=ST.cur;
+    if(c.kind==='shape'){c.p1=p;return}
+    const pts=c.pts,last=pts[pts.length-1],dx=p.x-last.x,dy=p.y-last.y,dist=Math.hypot(dx,dy);
+    if(dist<1.2)return;
+    const now=performance.now();let r=c.w/2;
+    if(c.tool==='brush'){
+      const spd=dist/Math.max(4,now-lastT);
+      r=c.w/2*(1.35-Math.min(.95,spd*.5));
+      if(e.pointerType==='pen'&&e.pressure>0)r=c.w/2*(.3+1.15*e.pressure);
+      r=last.r*.7+r*.3;
+    }
+    lastT=now;
+    if(c.tool==='spray'&&dist>5){
+      const n=Math.floor(dist/5);
+      for(let i=1;i<=n;i++)pts.push({x:last.x+dx*i/(n+1),y:last.y+dy*i/(n+1),r:r});
+    }
+    pts.push({x:p.x,y:p.y,r:r});
+    if(c.kind==='erase'){
+      const seg={sym:c.sym,w:c.w,pts:[last,{x:p.x,y:p.y}]};
+      actx.save();actx.globalCompositeOperation='destination-out';eraseOp(actx,seg);actx.restore();
+    }
+  });
+  function sEnd(){
+    if(!sDown)return;sDown=false;
+    if(ST.tool==='center'){
+      if(ST.cpre){const q=ST.cpre;ST.cpre=null;if(q.x!==ST.cx||q.y!==ST.cy){ST.cx=q.x;ST.cy=q.y;rebuild()}}
+      return;
+    }
+    if(ST.tool==='lasso'||ST.lasso||ST.selDrag){
+      if(ST.selDrag)ST.selDrag=null;
+      else if(ST.lasso){const poly=ST.lasso;ST.lasso=null;if(poly.length>=8)createSel(poly)}
+      return;
+    }
+    const c=ST.cur;ST.cur=null;if(!c)return;
+    if(c.kind==='shape'){
+      if(Math.hypot(c.p1.x-c.p0.x,c.p1.y-c.p0.y)<4)return;
+      applyOp(c);pushOp(c);
+    }else if(c.kind==='stroke'){applyOp(c);pushOp(c)}
+    else if(c.kind==='erase')pushOp(c);
+  }
+  sc.addEventListener('pointerup',sEnd);
+  sc.addEventListener('pointercancel',sEnd);
+  sc.addEventListener('pointerleave',()=>{if(!sDown)ST.ptr=null});
+  sc.addEventListener('contextmenu',e=>e.preventDefault());
+
+  /* ---- 저장 ---- */
+  let toastT=0;
+  function toast(t){const e=$('#zToast');e.textContent=t;clearTimeout(toastT);toastT=setTimeout(()=>{e.textContent=''},3500)}
+  function anchorSave(blob,name){
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast('저장했어요!');
+  }
+  function saveBlob(blob){
+    const d=new Date(),pad=n=>(n<10?'0':'')+n,name='점대칭도형_드로잉_'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.png';
+    const cl=window.claude;
+    if(cl&&typeof cl.use==='function'){
+      cl.use('downloads').then(dl=>{
+        if(!dl){anchorSave(blob,name);return}
+        dl.save({filename:name,data:blob}).then(()=>toast('저장했어요!')).catch(err=>toast(err&&err.code==='declined'?'저장을 취소했어요.':'저장하지 못했어요. 다시 눌러 주세요.'));
+      }).catch(()=>anchorSave(blob,name));
+    }else anchorSave(blob,name);
+  }
+  function exportPNG(){
+    commitSel();
+    const ex=mkc(RW,RH),e=ex.getContext('2d');
+    e.fillStyle=ST.bg;e.fillRect(0,0,RW,RH);
+    if(ST.grid){e.save();e.scale(K,K);drawGrid(e);e.restore()}
+    e.drawImage(art,0,0);
+    if(ST.saveCenter&&ST.sym==='point'){e.save();e.scale(K,K);drawCenter(e,ST.cx,ST.cy,1);e.restore()}
+    ex.toBlob(b=>{if(b)saveBlob(b);else toast('저장하지 못했어요.')},'image/png');
+  }
+
+  /* ---- 창 UI ---- */
+  const TOOLS=[
+    ['그리기'],
+    ['pencil','연필','✎'],['marker','형광펜','▬'],['brush','붓','✒'],['spray','스프레이','∴'],['dots','점선 펜','⋯'],['neon','네온 펜','✧'],['rainbow','무지개 펜','≋'],['eraser','지우개','⌫'],
+    ['도형'],
+    ['line','직선','╱'],['rect','사각형','▭'],['ellipse','원','◯'],['tri','삼각형','△'],['diamond','마름모','◇'],['star','별','☆'],['heart','하트','♡'],['hexa','육각형','⬡'],
+    ['꾸미기'],
+    ['fill','색칠하기','▨'],['pick','스포이드','⌖'],['stamp','낱자 도장','ㄹ'],
+    ['선택 · 중심'],
+    ['lasso','올가미 선택','◌'],['center','ㅇ 옮기기','ㅇ']
+  ];
+  const SYMS=[['point','점대칭 (180° 돌리기)'],['none','대칭 없음']];
+  const SWATCH=['#E24B55','#F38588','#F59A3C','#F5C542','#56AB40','#9AD27A','#2FB8B0','#3F8EE0','#6C5CE7','#B06AD8','#8B5A2B','#4D3831','#000000','#808080','#FFFFFF'];
+  const BGS=['#FFFFFF','#FFF7E2','#DFF1FF','#E8F7E0','#2B2F3A','#000000'];
+  function el(tag,cls,txt,parent){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;if(parent)parent.appendChild(e);return e}
+  function buildTools(){
+    const box=$('#zTools');box.textContent='';
+    TOOLS.forEach(t=>{
+      if(t.length===1){el('h4',null,t[0],box);return}
+      const b=el('button','ztl'+(ST.tool===t[0]?' on':''),null,box);b.type='button';
+      el('i',null,t[2],b);el('span',null,t[1],b);
+      b.addEventListener('click',()=>{if(ST.sel&&t[0]!=='lasso')commitSel();ST.tool=t[0];buildTools();buildOpts()});
+    });
+  }
+  const TOOL_HINT={
+    center:'격자 위의 점을 눌러 대칭의 중심 ㅇ을 옮겨 보세요. 옮기면 그림 전체가 새 중심에 맞춰 다시 그려져요.',
+    stamp:'ㄹ, ㅏ, ㅋ처럼 한쪽으로 치우친 글자를 찍어 보세요. 짝 글자는 거꾸로 뒤집힌 채 반대쪽에 찍혀요.',
+    lasso:'그림을 빙 둘러 감싸면 옮기거나 크기를 바꿀 수 있어요. 옮긴 뒤에는 대칭이 아닐 수 있어요.'
+  };
+  function buildOpts(){
+    const box=$('#zOpts');box.textContent='';
+    el('div','zhint',ST.sym==='point'?(TOOL_HINT[ST.tool]||'그리면 ㅇ을 중심으로 180° 돌린 그림이 반대쪽에 함께 그려져요. 연결선은 대응점을 이어 줘요.'):'대칭 없이 그려요. 위쪽 대칭 모드에서 점대칭을 켜 보세요.',box);
+    if(ST.tool==='lasso'||ST.sel){
+      el('h4',null,'올가미 선택 · 옮기기 · 크기',box);
+      el('div','zhint','올가미로 그림을 빙 둘러 감싸요. 안쪽을 끌면 옮겨지고, 파란 네모의 모서리를 끌면 크기가 바뀌어요.',box);
+      const lg=el('div','zgrid2',null,box);
+      [['크게 ▲ ×1.25',()=>scaleSel(1.25)],['작게 ▼ ×0.8',()=>scaleSel(0.8)],['붙이기(확정)',commitSel],['선택 지우기',deleteSel],['취소',cancelSel]].forEach(o=>{
+        const b=el('button','zob',o[0],lg);b.type='button';b.disabled=!ST.sel;b.addEventListener('click',o[1]);
+      });
+    }
+    el('h4',null,'대칭 모드',box);
+    const g=el('div','zgrid2',null,box);
+    SYMS.forEach(sy=>{
+      const b=el('button','zob'+(ST.sym===sy[0]?' on':''),sy[1],g);b.type='button';
+      b.addEventListener('click',()=>{ST.sym=sy[0];buildOpts()});
+    });
+    el('h4',null,'색',box);
+    const sw=el('div','zswr',null,box);
+    SWATCH.forEach(col=>{
+      const b=el('button','zswc'+(ST.color.toLowerCase()===col.toLowerCase()?' on':''),null,sw);b.type='button';b.style.background=col;b.setAttribute('aria-label','색 '+col);
+      b.addEventListener('click',()=>{ST.color=col;buildOpts()});
+    });
+    const ci=el('input',null,null,sw);ci.type='color';ci.id='zColorIn';ci.value=ST.color.length===7?ST.color:'#e24b55';ci.setAttribute('aria-label','색 직접 고르기');
+    ci.addEventListener('input',()=>{ST.color=ci.value});
+    ci.addEventListener('change',buildOpts);
+    el('h4',null,'굵기 / 진하기',box);
+    const pr=el('div','zgrid3',null,box);
+    [['가늘게',4],['보통',12],['굵게',30]].forEach(o=>{
+      const b=el('button','zob'+(ST.w===o[1]?' on':''),o[0],pr);b.type='button';
+      b.addEventListener('click',()=>{ST.w=o[1];buildOpts()});
+    });
+    const r1=el('label','zrng',null,box);el('span',null,'굵기',r1);
+    const s1=el('input',null,null,r1);s1.type='range';s1.min=2;s1.max=80;s1.value=ST.w;
+    const v1=el('span',null,String(ST.w),r1);
+    s1.addEventListener('input',()=>{ST.w=+s1.value;v1.textContent=ST.w});
+    const r2=el('label','zrng',null,box);el('span',null,'진하기',r2);
+    const s2=el('input',null,null,r2);s2.type='range';s2.min=10;s2.max=100;s2.value=ST.alpha;
+    const v2=el('span',null,ST.alpha+'%',r2);
+    s2.addEventListener('input',()=>{ST.alpha=+s2.value;v2.textContent=ST.alpha+'%'});
+    if(ST.tool==='stamp'){
+      el('h4',null,'낱자 도장 고르기 (굵기로 크기 조절)',box);
+      const gg=el('div','zgrid2',null,box);
+      Object.keys(GL).forEach(ch=>{
+        const b=el('button','zob'+(ST.glyph===ch?' on':''),ch,gg);b.type='button';b.style.fontSize='26px';
+        b.addEventListener('click',()=>{ST.glyph=ch;buildOpts()});
+      });
+    }
+    el('h4',null,'옵션',box);
+    [['fill','도형 안을 색으로 채우기'],['grid','모눈 보이기'],['center','대칭의 중심 ㅇ 보이기'],['hover','대응점 표시'],['saveCenter','저장할 때 대칭의 중심도 넣기']].forEach(o=>{
+      const l=el('label','zchk',null,box),c=el('input',null,null,l);c.type='checkbox';c.checked=!!ST[o[0]];
+      el('span',null,o[1],l);c.addEventListener('change',()=>{ST[o[0]]=c.checked});
+    });
+    el('h4',null,'종이 색',box);
+    const bw=el('div','zswr',null,box);
+    BGS.forEach(col=>{
+      const b=el('button','zswc'+(ST.bg===col?' on':''),null,bw);b.type='button';b.style.background=col;b.setAttribute('aria-label','종이 색 '+col);
+      b.addEventListener('click',()=>{ST.bg=col;buildOpts()});
+    });
+  }
+  const clearBtn=$('#zClear');let clearTimer=0;
+  clearBtn.addEventListener('click',()=>{
+    if(!ST.clearArm){ST.clearArm=1;clearBtn.textContent='정말 지울까요?';clearTimer=setTimeout(()=>{ST.clearArm=0;clearBtn.textContent='모두 지우기'},3000);return}
+    clearTimeout(clearTimer);ST.clearArm=0;clearBtn.textContent='모두 지우기';commitSel();
+    const op={kind:'clear'};applyOp(op);pushOp(op);
+  });
+  $('#zUndo').addEventListener('click',undo);
+  $('#zRedo').addEventListener('click',redo);
+  $('#zSave').addEventListener('click',exportPNG);
+  $('#zSpin').addEventListener('click',()=>{
+    if(ST.spin)return;commitSel();
+    if(ST.sym!=='point'){toast('점대칭 모드에서 돌려 볼 수 있어요.');return}
+    if(!ST.ops.length){toast('먼저 그림을 그려 보세요!');return}
+    ST.spin={t0:performance.now(),dur:reduced?0:1800};
+    toast('반 바퀴 돌려도 똑같이 겹쳐져요!');
+  });
+  $('#zClose').addEventListener('click',close);
+  window.addEventListener('keydown',e=>{
+    if(!ST.open)return;
+    if(e.key==='Escape'){close();return}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)redo();else undo()}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}
+  });
+  if(window.ResizeObserver)new ResizeObserver(sResize).observe($('#zStage'));
+  window.addEventListener('resize',sResize);
+  function open(){
+    studio.classList.add('open');ST.open=true;sResize();
+    buildTools();buildOpts();refreshTop();
+    if(!ST.loop){ST.loop=true;requestAnimationFrame(sFrame)}
+  }
+  function close(){commitSel();ST.cpre=null;sDown=false;studio.classList.remove('open');ST.open=false}
+  return {open:open,close:close};
+}
+
+/* ======================= concept modal ======================= */
+function openConcept(){
+  const m=$('#modal'),sh=$('#sheet');
+  sh.innerHTML=`<h2 id="mtitle">📘 점대칭도형 개념</h2>
+  ${boardHTML('dm',false,'점대칭도형 예시')}
+  <div class="row center"><button class="btn ghost" id="dspin">🔄 180° 돌려 보기</button></div>
+  <ul>
+    <li><b>점대칭도형</b>: 한 점을 중심으로 180° 돌렸을 때 처음 도형과 완전히 겹치는 도형이에요.</li>
+    <li><b>대칭의 중심</b>: 돌릴 때 중심이 되는 점이에요. 그림에서는 점 ㅇ이에요.</li>
+    <li><b>대응점·대응변·대응각</b>: 돌렸을 때 서로 겹치는 점, 변, 각이에요.</li>
+    <li>대응변의 길이는 같고, 대응각의 크기도 같아요.</li>
+    <li>대응점을 이은 선분은 대칭의 중심에서 둘로 똑같이 나뉘어요.</li>
+    <li>그리는 방법: 꼭짓점에서 ㅇ까지 선을 긋고, 같은 길이만큼 반대쪽으로 늘려서 대응점을 찍어요.</li>
+  </ul>
+  <div class="row center"><button class="btn primary" id="mclose">닫기</button></div>`;
+  const f={v:[[5,3],[10,3],[11,7],[6,7]],o:[8,5],L:KO};
+  drawFig('dm',f,{lines:[[0,2],[1,3]]});
+  let ang=0,busy=false;
+  $('#dspin').onclick=()=>{if(busy)return;busy=true;const g=$('#dm-fig');spin(g,f.o,ang,ang+180,()=>{ang=(ang+180)%360;if(ang===0)g.removeAttribute('transform');busy=false})};
+  $('#mclose').onclick=closeConcept;
+  m.hidden=false;m.scrollTop=0;$('#mclose').focus();
+}
+function closeConcept(){$('#modal').hidden=true}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeConcept()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeConcept()});
+$('#btnHelp').onclick=openConcept;
+function soundLabel(){$('#btnSound').textContent=save.sound?'🔊':'🔇'}
+$('#btnSound').onclick=()=>{save.sound=!save.sound;persist();soundLabel();if(save.sound)sfx.put()};
+soundLabel();
+home();
+})();
+</script>
+</body>
+</html>
